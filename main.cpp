@@ -1,4 +1,4 @@
-// File that containst the constructor
+// File that contains the constructor
 
 #include <iostream>
 
