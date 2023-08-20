@@ -1,5 +1,5 @@
 # alternative-ML-lib-C2plus
-Here we will try writing our own C++ library for for our ML research. Following PyTorch example, we will introduce our own Tensor class, and implement the basic methods for it, such as forwardprop, backprop, and loss computation. Then we will test our class for typical tasks, such as regularization and classification
+Here we will try creating our own C++ library for our Machine Learning research. Specifically, we will introduce a new type of data structure that we will be calling Tensors as in PyTorch, and write a few methods for it.
 
 Open tasks:
 
@@ -7,3 +7,10 @@ Open tasks:
 2. Forward propagation method
 3. Computation of the loss method
 4. The backpropagation method
+
+
+Once the class and its methods are written:
+
+1. Test the data structure and its methods for regression tasks
+2. Test the data structure and its methods for classification tasks
+3. Test the data structure and its methods for "gymnasium" Reinforcement Learning tasks
