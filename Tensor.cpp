@@ -101,19 +101,32 @@ void Tensor::optimizer(vector<double> &output_vector){
 
     // d(loss_i)/dw_ij = 2*(y_i-t_i)*\theta(z_i)*\sum_j y_j^l-1, where loss_i = (y_i - t_i)^2,
     // y_i=f(z_i) is the output value, t_i is the target value, y_j^l-1 is the activation from the previous layer
-    double sum_hidden = accumulate(_hidden_vector.begin(), _hidden_vector.end(), 0);
     for(auto i = 0; i < _output_size; i++){
         // if the i-th activation of output layer y_i = 0, none of the w_ij will be updated due to ReLU activation
         if(_output_vector[i] != 0){ 
             for(auto j = 0; j < _hidden_size; j++){
-                _W2[i][j] = _W2[i][j] - _learning_rate*2*(_output_vector[i] - target_vector[i])*sum_hidden;
+                _W2[i][j] = _W2[i][j] - _learning_rate * 2 * (_output_vector[i] - target_vector[i]) * _hidden_vector[j];
             }
-            _B2[i] = _B2[i] - _learning_rate*2*(_output_vector[i] - target_vector[i]);
+            _B2[i] = _B2[i] - _learning_rate * 2 * (_output_vector[i] - target_vector[i]);
         }
     }
 
     // updating W1 and B1 will be here below
-    double sum_input = accumulate(_input_vector.begin(), _input_vector.end(), 0);
-
-
+    for(auto i = 0; i < _hidden_size; i++){
+        // if the i-th activation of output layer y_i = 0, none of the w_ij will be updated due to ReLU activation
+        if(_hidden_vector[i] != 0){ 
+            // compute first d(loss_i)/dy_i^l-1
+            double dC_dy_prev = 0;
+            for(auto n = 0; n < _output_size; n++){
+                if(_output_vector[n] != 0){
+                    dC_dy_prev += 2 * (_output_vector[n] - target_vector[n]) * _W2[i][n];
+                }
+            }
+            // update weights and biases
+            for(auto j = 0; j < _input_size; j++){
+                _W1[i][j] = _W1[i][j] - _learning_rate * dC_dy_prev * _input_vector[j];
+            }
+            _B1[i] = _B1[i] - _learning_rate * dC_dy_prev;
+        }
+    }
 }
