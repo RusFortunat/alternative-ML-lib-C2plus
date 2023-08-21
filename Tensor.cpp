@@ -16,31 +16,31 @@ Tensor::Tensor(int input_size, int hidden_size, int output_size, double learning
     _hidden_size = hidden_size;
     _output_size = output_size;
     _learning_rate = learning_rate;
-    _input_vector(input_size); // not sure if this is needed; prolly yes, for backprop
-    _hidden_vector(hidden_size);
-    _output_vector(output_size);
+    _input_vector.resize(input_size); // not sure if this is needed; prolly yes, for backprop
+    _hidden_vector.resize(hidden_size);
+    _output_vector.resize(output_size);
 
     // For a fully-connected network, the dimensions of W1 matrix woud have (hidden_size x input_size) dimensions. 
     // Here I assume that output vector z is obtained by (W * input vector) + biases, or 
     // z_i = \sum_{i=0}^{input_size} W_ij * input_j + b_i. 
-    _W1(hidden_size, vector<double>(input_size));  // weights or adjacency matrix
-    _W2(output_size, vector<double>(hidden_size)); // output_size x hidden_size
-    _B1(hidden_size); // biases; 0 by default
-    _B2(output_size);
+    _W1.resize(hidden_size, vector<double>(input_size));  // weights or adjacency matrix
+    _W2.resize(output_size, vector<double>(hidden_size)); // output_size x hidden_size
+    _B1.resize(hidden_size); // biases; 0 by default
+    _B2.resize(output_size);
     
     // Choosing the initial values of weights and biases can be a work of art, and I will follow the 
     // guidlines in this answer by Ashunigion user:  https://stackoverflow.com/a/55546528/16639275
     random_device rd{};
     mt19937 RNG{ rd() };
     // I will go with the uniform distribution, that ranges from -(1/sqrt(input_size)):(1/sqrt(input_size))
-    range_w1 = 1.0/sqrt(1.0*input_size);
+    double range_w1 = 1.0/sqrt(1.0*input_size);
     uniform_real_distribution<double> w1_weights{ -range_w1, range_w1 }; 
     for(auto i = 0; i < hidden_size; i++){
         for(auto j = 0; j < input_size; j++){
             _W1[i][j] = w1_weights(RNG);
         }
     }
-    range_w2 = 1.0/sqrt(1.0*hidden_size);
+    double range_w2 = 1.0/sqrt(1.0*hidden_size);
     uniform_real_distribution<double> w2_weights{ -range_w2, range_w2 }; 
     for(auto i = 0; i < output_size; i++){
         for(auto j = 0; j < hidden_size; j++){

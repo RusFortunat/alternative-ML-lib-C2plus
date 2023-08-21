@@ -29,4 +29,4 @@ class Tensor{
         vector<double> _input_vector;
         vector<double> _hidden_vector;
         vector<double> _output_vector;
-}
+};
