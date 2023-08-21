@@ -75,6 +75,7 @@ void Tensor::forward(vector<double> &input_vector){
     }
 
     // compute output layer activations
+    printf("Output vector: \n");
     for(auto i = 0; i < _output_size; i++){
         double sum = 0;
         for(auto j = 0; j < _hidden_size; j++){
@@ -82,7 +83,9 @@ void Tensor::forward(vector<double> &input_vector){
             sum += z > 0 ? z : 0; // consize inline if-statement for RELU
         }
         _output_vector[i] = sum;
+        cout << _output_vector[i] << "\t";
     }
+    cout << endl;
 }
 
 // compute loss and do the backprop
