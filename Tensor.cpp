@@ -119,7 +119,7 @@ void Tensor::optimizer(vector<double> &output_vector){
             double dC_dy_prev = 0;
             for(auto n = 0; n < _output_size; n++){
                 if(_output_vector[n] != 0){
-                    dC_dy_prev += 2 * (_output_vector[n] - target_vector[n]) * _W2[i][n];
+                    dC_dy_prev += 2 * (_output_vector[n] - target_vector[n]) * _W2[n][i];
                 }
             }
             // update weights and biases
