@@ -106,14 +106,14 @@ void Tensor::optimizer(vector<double> &output_vector){
         // if the i-th activation of output layer y_i = 0, none of the w_ij will be updated due to ReLU activation
         if(_output_vector[i] != 0){ 
             for(auto j = 0; j < _hidden_size; j++){
-                _W2[i][j] += 2*(_output_vector[i] - target_vector[i])*sum_hidden;
+                _W2[i][j] = _W2[i][j] - _learning_rate*2*(_output_vector[i] - target_vector[i])*sum_hidden;
             }
-            _B2[i] += 2*(_output_vector[i] - target_vector[i]);
+            _B2[i] = _B2[i] - _learning_rate*2*(_output_vector[i] - target_vector[i]);
         }
     }
 
     // updating W1 and B1 will be here below
+    double sum_input = accumulate(_input_vector.begin(), _input_vector.end(), 0);
 
-    
 
 }
