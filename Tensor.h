@@ -1,5 +1,9 @@
+// File with Tensor class constructor, destructor, and methods
+// Authors: 
 #pragma once
 #include <iostream>
+#include <vector>
+using namespace std;
 
 class Tensor{
     public:
@@ -9,9 +13,9 @@ class Tensor{
 
         void forward(vector<double> &input_vector); // forwardprop with ReLU activation
         //vector<double> loss(vector<double> &output_vector);
-        void optimizer(vector<double> &target_vector, vector<double> &output_vector); // not sure if computing loss should be a separate function... 
+        double optimizer(vector<double> &target_vector); // not sure if computing loss should be a separate function... 
 
-        void model_parameters(); // would be good to have this one too, to monitor changes
+        //void model_parameters(); // would be good to have this one too, to monitor changes
 
     private: 
         int _input_size;

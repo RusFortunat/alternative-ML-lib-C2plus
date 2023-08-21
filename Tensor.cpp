@@ -1,8 +1,9 @@
 // File with Tensor class constructor, destructor, and methods
-// Authors: for now just me
+// Authors: 
 #include <iostream>
 #include <random>
 #include <cmath>
+#include <vector>
 #include "Tensor.h"
 
 using namespace std;
@@ -85,7 +86,7 @@ void Tensor::forward(vector<double> &input_vector){
 }
 
 // compute loss and do the backprop
-void Tensor::optimizer(vector<double> &output_vector){
+double Tensor::optimizer(vector<double> &target_vector){
     // Now here comes the complicated part: we will compute loss here and then backpropagate 
     // it to update the model parameters. At the moment, I will use the knowledge I have about
     // how the derivatives of the loss are being computed, but maybe later some automatic differenntiation
@@ -129,4 +130,7 @@ void Tensor::optimizer(vector<double> &output_vector){
             _B1[i] = _B1[i] - _learning_rate * dC_dy_prev;
         }
     }
+
+    double total_loss = accumulate(loss.begin(), loss.end(), 0);
+    return total_loss;
 }
