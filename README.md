@@ -7,7 +7,7 @@ The skeleton of the library is in "Tensor.h" and "Tensor.cpp" files.
 
 Open problems:
 
-1. At the moment the structure of the network defined in Tensor class is very rigid: it allows only for a single hidden layer and only ReLU activation. It would be very important to improve that at some point and allow initializing more complex networks with various activations.
+1. At the moment the structure of the network defined in Tensor class is very rigid: it allows only for a single hidden layer and forwardprop and backprop only use ReLU activation. It would be very important to improve that at some point and allow initializing more complex networks with various activations.
 
 2. We need to implement Stochastic Gradient descent. At the moment the network takes the whole input data and does the gradient descent for the whole data batch. We need to change that. 
    
