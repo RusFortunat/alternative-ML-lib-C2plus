@@ -7,7 +7,8 @@ The skeleton of the library is in "Tensor.h" and "Tensor.cpp" files. At the mome
 
 Open problems:
 
-1. Something is wrong with backprop method. The network cannot approach the negative target values.
+1. Something is wrong with backprop method. The network cannot approach the negative target values. UPD: ReLU does indeed has a problem with negative target values. I think the backprop works fine, but I need to reimplement the linear regression test.
+
 
 
 
