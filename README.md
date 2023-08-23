@@ -9,9 +9,7 @@ Open problems:
 
 1. At the moment the structure of the network defined in Tensor class is very rigid: it allows only for a single hidden layer and forwardprop and backprop only use ReLU activation. It would be imperative to improve that at some point and allow initializing more complex networks with various activations.
 
-2. We need to implement Stochastic Gradient descent. At the moment the network takes the whole input data and does the gradient descent for the whole data batch. We need to change that. 
-   
-3. I have tried supplying the input vector to a network and adjusting the network parameters for the output to fit target values, and the program seems to work great when the target values are positive. However, if the target set has negative elements, the network will be facing "dying ReLU" problem, when certain neurons turn to 0 and get stuch there because of ReLU activation function. Not sure at the moment if this is something we should concern ourselves with or not.
+2. Stochastic Gradient Descent (SGD) is implemented, but I have realized that generalizing the class so it can do both classification tasks and regression analysis is hard... To proceed right now, I will have separate folders with different implementations of the network class in each of them. Perhaps, some day I will find time to generalize the method for it to be able to deal with any of these tasks.
 
 
 
