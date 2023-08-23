@@ -7,9 +7,7 @@ The skeleton of the library is in "Tensor.h" and "Tensor.cpp" files.
 
 Open problems:
 
-1. At the moment the structure of the network defined in Tensor class is very rigid: it allows only for a single hidden layer and forwardprop and backprop only use ReLU activation. It would be imperative to improve that at some point and allow initializing more complex networks with various activations.
-
-2. Stochastic Gradient Descent (SGD) is implemented, but I have realized that generalizing the class so it can do both classification tasks and regression analysis is hard... To proceed right now, I will have separate folders with different implementations of the network class in each of them. Perhaps, some day I will find time to generalize the method for it to be able to deal with any of these tasks.
+1. Rigid, case-specific network structure and methods. The Stochastic Gradient Descent (SGD) method is implemented, but I have realized that generalizing the Tensor class so it can do both classification tasks and regression analysis is hard... To proceed right now, I have separate folders and put different implementations of the network class in each of them. Perhaps, some day I will find time to generalize the method for it to be able to deal with any of these tasks.
 
 
 
