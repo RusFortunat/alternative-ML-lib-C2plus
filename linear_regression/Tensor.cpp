@@ -50,7 +50,7 @@ vector<double> Tensor::forward(vector<double> &input_vector){
     for(auto i = 0; i < _output_size; i++){
         double sum = 0;
         for(auto j = 0; j < _input_size; j++){
-            sum += _W1[i][j]* input_vector[j] + _B1[i];
+            sum += _W[i][j]* input_vector[j] + _B[i];
         }
         predicted[i] = sum;
     }
@@ -82,8 +82,8 @@ void Tensor::optimizer_step(vector<vector<double>>& w_gradients, vector<double>&
 
     for (auto i = 0; i < _output_size; i++) {
         for (auto j = 0; j < _input_size; j++) {
-            _W1[i][j] = _W1[i][j] - _learning_rate * w_gradients[i][j];
+            _W[i][j] = _W[i][j] - _learning_rate * w_gradients[i][j];
         }
-        _B1[i] = _B1[i] - _learning_rate * b_gradients[i];
+        _B[i] = _B[i] - _learning_rate * b_gradients[i];
     }
 }
