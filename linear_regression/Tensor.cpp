@@ -4,6 +4,7 @@
 #include <random>
 #include <cmath>
 #include <vector>
+#include <ctime>
 #include "Tensor.h"
 
 using namespace std;
@@ -22,14 +23,16 @@ Tensor::Tensor(int input_size, int output_size, double learning_rate){
     _W.resize(output_size, vector<double>(input_size));  // weights or adjacency matrix
     _B.resize(output_size); // biases; 0 by default
         
-    random_device rd{};
-    mt19937 RNG{ rd() };
+    //random_device rd{}; //doesn't work with my MinGW compiler, gives the same number... should work with other compilers
+    srand(std::time(0));
+    int random_seed = rand();
+    mt19937 RNG2{ random_seed };
     // I will go with the uniform distribution, that ranges from -(1/sqrt(input_size)):(1/sqrt(input_size))
     double range_w = 1.0/sqrt(1.0*input_size);
-    uniform_real_distribution<double> w1_weights{ -range_w, range_w }; 
+    uniform_real_distribution<double> w1_weights{ -range_w, range_w };
     for(auto i = 0; i < output_size; i++){
         for(auto j = 0; j < input_size; j++){
-            _W[i][j] = w1_weights(RNG);
+            _W[i][j] = w1_weights(RNG2);
         }
     }
 }
