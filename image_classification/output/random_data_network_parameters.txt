@@ -1,1 +1,1 @@
-weights1 0.866665; biases1 0.145011; weights2 0.679823; biases2 0.32884
+weights1 0.260335; biases1 -0.0142637; weights2 0.0148933; biases2 0.0430677

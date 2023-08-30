@@ -1,5 +1,5 @@
 // Here I will use a fully-connected network with 1 hidden layer to classify images. 
-// I will test my code on MNIST database of handwritten number and letters.
+// I will test my code on NIST database of handwritten number and letters.
 
 #include <iostream>
 #include <vector>
@@ -28,14 +28,26 @@ int main(){
     // define out network
     Tensor model(input_size, hidden_size, output_size, learning_rate);
 
-    // load images; the MNIST data set is huge (~1GB in size), so you have to download it yourself 
-    // and specify your path to the folder with the data
-    
+    // RNG
+    random_device rd{}; // doesn't work with my Windows MinGW C++ compiler... get the same number
+    mt19937 RNG{ rd() }; 
+    //srand(std::time(0));
+    //const int random_seed = rand(); // 
+    //cout << "seed: " << random_seed << endl;
+    //mt19937 RNG{ random_seed }; // and this doesn't work on my Mac, what a joke
+    uniform_real_distribution<double> data{ 0, 10 };
 
-
-
-
-
+    // generate train and target data sets
+    vector<vector<double>> x(data_set_size, vector<double>(input_size));
+    vector<vector<double>> y(data_set_size, vector<double>(output_size));
+    for (auto i = 0; i < data_set_size; i++) {
+        for (auto j = 0; j < input_size; j++) {
+            double dice = data(RNG);
+            x[i][j] = dice;
+            dice = data(RNG);
+            y[i][j] = dice;
+        }
+    }
 
     // train the network
     printf("Train the network on a randomly generated data set:\n");
