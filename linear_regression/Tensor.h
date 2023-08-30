@@ -16,6 +16,7 @@ class Tensor{
             vector<double>& target_vector, vector<vector<double>>& w_gradients, vector<double>& b_gradients, int batch_size); // compute gradients for backprop
 
         void optimizer_step(vector<vector<double>>& w_gradients, vector<double>& b_gradients); // update network parameters
+        tuple<vector<vector<double>>, vector<double>> model_parameters();
 
     private: 
         int _input_size;

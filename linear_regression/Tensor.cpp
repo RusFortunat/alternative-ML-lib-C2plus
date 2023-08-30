@@ -23,10 +23,11 @@ Tensor::Tensor(int input_size, int output_size, double learning_rate){
     _W.resize(output_size, vector<double>(input_size));  // weights or adjacency matrix
     _B.resize(output_size); // biases; 0 by default
         
-    //random_device rd{}; //doesn't work with my MinGW compiler, gives the same number... should work with other compilers
-    srand(std::time(0));
-    int random_seed = rand();
-    mt19937 RNG2{ random_seed };
+    random_device rd{}; //doesn't work with my MinGW compiler, gives the same number... should work with other compilers
+    //srand(std::time(0));
+    //const int random_seed2 = rand();
+    //mt19937 RNG2{ random_seed2 };
+    mt19937 RNG2{rd()};
     // I will go with the uniform distribution, that ranges from -(1/sqrt(input_size)):(1/sqrt(input_size))
     double range_w = 1.0/sqrt(1.0*input_size);
     uniform_real_distribution<double> w1_weights{ -range_w, range_w };
@@ -70,13 +71,10 @@ void Tensor::compute_gradients(vector<double>& input_vector, vector<double>& pre
 
     for (auto i = 0; i < _output_size; i++) {
         // if the i-th activation of output layer y_i = 0, none of the w_ij will be updated due to ReLU activation
-        if (predicted_vector[i] != 0) {
-            int sign = predicted_vector[i] > 0 ? 1 : -1;
-            for (auto j = 0; j < _input_size; j++) {
-                w_gradients[i][j] += (1.0 / (1.0 * batch_size)) * 2 * sign * (predicted_vector[i] - target_vector[i]) * input_vector[j];
-            }
-            b_gradients[i] += (1.0 / (1.0 * batch_size)) * 2 * sign * (predicted_vector[i] - target_vector[i]);
+        for (auto j = 0; j < _input_size; j++) {
+            w_gradients[i][j] += (1.0 / (1.0 * batch_size)) * 2 * (predicted_vector[i] - target_vector[i]) * input_vector[j];
         }
+        b_gradients[i] += (1.0 / (1.0 * batch_size)) * 2 * (predicted_vector[i] - target_vector[i]);
     }
 }
 
@@ -89,4 +87,9 @@ void Tensor::optimizer_step(vector<vector<double>>& w_gradients, vector<double>&
         }
         _B[i] = _B[i] - _learning_rate * b_gradients[i];
     }
+}
+
+tuple<vector<vector<double>>, vector<double>> Tensor::model_parameters(){
+
+    return make_tuple(_W, _B);
 }
