@@ -1,0 +1,3 @@
+True parameters: slope -0.726477; bias 0.856379
+Starting random parameters: weight 0.0749463; bias 0
+Parameters at the end of training: weight -0.603239; bias -0.0782401

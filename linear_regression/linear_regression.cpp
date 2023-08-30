@@ -88,12 +88,12 @@ int main(){
     }
 
     // save data and parameters
-    ofstream output_data("./random_data.txt");
+    ofstream output_data("./output/random_data.txt");
     for(auto i = 0; i < data_set_size; i++){
         output_data << x[i][0] << "\t" << y[i][0] << "\n";
     }
     
-    ofstream output_parameters("./random_data_network_parameters.txt");
+    ofstream output_parameters("./output/random_data_network_parameters.txt");
     tuple<vector<vector<double>>, vector<double>> weights_and_biases = model.model_parameters();
     vector<vector<double>> weights = get<0>(weights_and_biases);
     vector<double> biases = get<1>(weights_and_biases);
@@ -161,12 +161,12 @@ int main(){
     }
 
     // save data and parameters
-    ofstream output_data2("./noisy_line_data.txt");
+    ofstream output_data2("./output/noisy_line_data.txt");
     for(auto i = 0; i < data_set_size; i++){
         output_data2 << x[i][0] << "\t" << y[i][0] << "\n";
     }
     
-    ofstream output_parameters2("./noisy_line_network_parameters.txt");
+    ofstream output_parameters2("./output/noisy_line_network_parameters.txt");
     weights_and_biases = model2.model_parameters();
     weights = get<0>(weights_and_biases);
     biases = get<1>(weights_and_biases);
