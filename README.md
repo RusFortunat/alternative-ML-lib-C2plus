@@ -16,6 +16,6 @@ Open problems:
 
 Once the class and its methods are written:
 
-1. Test the data structure and its methods for regression tasks
+1. Test the data structure and its methods for regression tasks -- done!
 2. Test the data structure and its methods for classification tasks
 3. Test the data structure and its methods for "gymnasium" Reinforcement Learning tasks
