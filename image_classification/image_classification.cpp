@@ -15,7 +15,7 @@
 using namespace std;
 
 // load the dataset and the labels; I copied these functions from here: https://stackoverflow.com/a/33384846 
-unsigned char** read_mnist_images(string full_path, int& number_of_images, int& image_size) {
+vector<vector<double>> read_mnist_images(string full_path, int& number_of_images, int& image_size) {
     auto reverseInt = [](int i) {
         unsigned char c1, c2, c3, c4;
         c1 = i & 255, c2 = (i >> 8) & 255, c3 = (i >> 16) & 255, c4 = (i >> 24) & 255;
@@ -45,14 +45,23 @@ unsigned char** read_mnist_images(string full_path, int& number_of_images, int& 
             _dataset[i] = new uchar[image_size];
             file.read((char*)_dataset[i], image_size);
         }
-        return _dataset;
+        // now convert to vector<vector<double>>
+        vector<vector<double>> double_dataset(number_of_images, vector<double>(image_size));
+        for (int i = 0; i < number_of_images; i++) {
+            for(int pixel = 0; pixel < image_size; pixel++){
+                double element = (double)_dataset[i][pixel];
+                double_dataset[i][pixel] = element;
+            }
+        }
+        printf("Successfully uploaded images\n");
+        return double_dataset;
     }
     else {
         throw runtime_error("Cannot open file `" + full_path + "`!");
     }
 }
 
-unsigned char* read_mnist_labels(string full_path, int& number_of_labels) {
+vector<double> read_mnist_labels(string full_path, int& number_of_labels) {
     auto reverseInt = [](int i) {
         unsigned char c1, c2, c3, c4;
         c1 = i & 255, c2 = (i >> 8) & 255, c3 = (i >> 16) & 255, c4 = (i >> 24) & 255;
@@ -76,7 +85,14 @@ unsigned char* read_mnist_labels(string full_path, int& number_of_labels) {
         for (int i = 0; i < number_of_labels; i++) {
             file.read((char*)&_dataset[i], 1);
         }
-        return _dataset;
+        // now convert to vector<double>
+        vector<double> double_dataset(number_of_labels);
+        for (int i = 0; i < number_of_labels; i++) {
+            double element = (double)_dataset[i];
+            double_dataset[i] = element;
+        }
+        printf("Successfully uploaded labels\n");
+        return double_dataset;
     }
     else {
         throw runtime_error("Unable to open file `" + full_path + "`!");
@@ -90,22 +106,25 @@ int main(){
     int hidden_size = 128;
     int output_size = 10; // number of labels
     double learning_rate = 0.001;  
-    int data_set_size = 200; // number of images
-    int batch_size = 20;
-    int training_episodes = 5;
+    int batch_size = 1000;
+    int training_episodes = 1;
 
-    // load images
-    string train_path_images = "";
-    string train_path_labels = "";
-    int data_set_size = 100;
-    unsigned char** train_dataset = read_mnist_images(train_path_images, data_set_size, input_size); // input_size = image size
-    unsigned char* train_labels = read_mnist_labels(train_path_labels, output_size); // output_size = numer of labels
+    // load images (path needs to be modified)
+    string train_path_images = "/Users/Ruslan.Mukhamadiarov/Work/ML-and-Physics/MNIST/train-images.idx3-ubyte";
+    string train_path_labels = "/Users/Ruslan.Mukhamadiarov/Work/ML-and-Physics/MNIST/train-labels.idx1-ubyte";
+    int data_set_size = 60000; // size of training data set
+    vector<vector<double>> train_dataset = read_mnist_images(train_path_images, data_set_size, input_size); // input_size = image size
+    vector<double> train_labels = read_mnist_labels(train_path_labels, output_size); // output_size = numer of labels
 
     // define out network
     Tensor model(input_size, hidden_size, output_size, learning_rate);
 
+    // seed for RNG
+    srand(std::time(0));
+    const int random_seed = rand();
+
     // train the network
-    printf("Train the network on a randomly generated data set:\n");
+    printf("Train the network on a MNIST handwritten digits dataset:\n");
     for(auto episode = 0; episode < training_episodes; episode++){
 
         double loss = 0;
@@ -115,7 +134,7 @@ int main(){
         for (auto i = 0; i < data_set_size; i++) {
             element_index[i] = i;
         }
-        shuffle(element_index.begin(), element_index.end(), std::default_random_engine(rd()));
+        shuffle(element_index.begin(), element_index.end(), std::default_random_engine(random_seed));
 
         // split the data into N mini-batches
         for (auto minibatch = 0; minibatch < int(data_set_size / batch_size); minibatch++) {
@@ -143,17 +162,18 @@ int main(){
 
             // update the network parameters using accumulated gradients that 
             model.optimizer_step(w_gradients1, b_gradients1, w_gradients2, b_gradients2);
+            printf("minibatch %i is finished\n", minibatch);
         }
         printf("Episode = %d; Loss = %.2f \n ", episode, loss);
     }
     printf("The training is done. Time to see how well the network can classify the images..\n");
 
     // test your network
-    string test_path_images = "";
-    string test_path_labels = "";
-    int test_set_size = 100;
-    unsigned char** test_dataset = read_mnist_images(test_path_images, test_set_size, input_size); // input_size = image size
-    unsigned char* test_labels = read_mnist_labels(test_path_labels, output_size); // output_size = numer of labels
+    string test_path_images = "/Users/Ruslan.Mukhamadiarov/Work/ML-and-Physics/MNIST/t10k-images.idx3-ubyte";
+    string test_path_labels = "/Users/Ruslan.Mukhamadiarov/Work/ML-and-Physics/MNIST/t10k-labels.idx1-ubyte";
+    int test_set_size = 10000; 
+    vector<vector<double>> test_dataset = read_mnist_images(test_path_images, test_set_size, input_size); // input_size = image size
+    vector<double> test_labels = read_mnist_labels(test_path_labels, output_size); // output_size = numer of labels
 
     int correct = 0;
     for (auto i = 0; i < test_set_size; i++) {
