@@ -49,7 +49,7 @@ vector<vector<double>> read_mnist_images(string full_path, int& number_of_images
         vector<vector<double>> double_dataset(number_of_images, vector<double>(image_size));
         for (int i = 0; i < number_of_images; i++) {
             for(int pixel = 0; pixel < image_size; pixel++){
-                double element = (double)_dataset[i][pixel];
+                double element = ((double)_dataset[i][pixel])/255.0;
                 double_dataset[i][pixel] = element;
             }
         }
@@ -61,7 +61,7 @@ vector<vector<double>> read_mnist_images(string full_path, int& number_of_images
     }
 }
 
-vector<double> read_mnist_labels(string full_path, int& number_of_labels) {
+vector<double> read_mnist_labels(string full_path, int number_of_labels) {
     auto reverseInt = [](int i) {
         unsigned char c1, c2, c3, c4;
         c1 = i & 255, c2 = (i >> 8) & 255, c3 = (i >> 16) & 255, c4 = (i >> 24) & 255;
@@ -106,8 +106,8 @@ int main(){
     int hidden_size = 128;
     int output_size = 10; // number of labels
     double learning_rate = 0.001;  
-    int batch_size = 1000;
-    int training_episodes = 1;
+    int batch_size = 100;
+    int training_episodes = 5;
 
     // load images (path needs to be modified)
     string train_path_images = "/Users/Ruslan.Mukhamadiarov/Work/ML-and-Physics/MNIST/train-images.idx3-ubyte";
@@ -115,6 +115,11 @@ int main(){
     int data_set_size = 60000; // size of training data set
     vector<vector<double>> train_dataset = read_mnist_images(train_path_images, data_set_size, input_size); // input_size = image size
     vector<double> train_labels = read_mnist_labels(train_path_labels, output_size); // output_size = numer of labels
+    /*printf("input vector\n");
+    for(auto i = 0; i < input_size; i++){
+        cout << train_dataset[0][i] << " ";
+    }
+    cout<<endl<<endl;*/
 
     // define out network
     Tensor model(input_size, hidden_size, output_size, learning_rate);
@@ -124,7 +129,7 @@ int main(){
     const int random_seed = rand();
 
     // train the network
-    printf("Train the network on a MNIST handwritten digits dataset:\n");
+    double fraction_for_training = 1.0;
     for(auto episode = 0; episode < training_episodes; episode++){
 
         double loss = 0;
@@ -137,7 +142,7 @@ int main(){
         shuffle(element_index.begin(), element_index.end(), std::default_random_engine(random_seed));
 
         // split the data into N mini-batches
-        for (auto minibatch = 0; minibatch < int(data_set_size / batch_size); minibatch++) {
+        for (auto minibatch = 0; minibatch < int(fraction_for_training * data_set_size / batch_size); minibatch++) {
             // accumulate computed gradient for this minibatch; for all weights and biases
             vector<vector<double>> w_gradients1(hidden_size, vector<double>(input_size)); 
             vector<vector<double>> w_gradients2(output_size, vector<double>(hidden_size)); 
@@ -150,19 +155,32 @@ int main(){
                 vector<double> target(output_size);
                 int true_label = train_labels[index];
                 target[true_label] = 1; // prepare the target vector in a way that only one element is non-zero
+                //printf("true_label %i \n", true_label);
 
                 vector<double> predicted = model.forward(input); // model prediction
+
+                /*printf("predicted vector\n");
+                for(auto i = 0; i < output_size; i++){
+                    cout << predicted[i] << " ";
+                }
+                cout << endl;
+                printf("target vector\n");
+                for(auto i = 0; i < output_size; i++){
+                    cout << target[i] << " ";
+                }
+                cout << endl << endl; */
+                
                 model.compute_gradients(input, predicted, target, 
                     w_gradients1, b_gradients1, w_gradients2, b_gradients2, batch_size); // accumulate gradients
                 
                 for (auto n = 0; n < predicted.size(); n++) {
-                    loss += (1.0/(1.0*data_set_size))*(predicted[n] - target[n])*(predicted[n] - target[n]);
+                    loss += (1.0/(fraction_for_training*data_set_size))*(predicted[n] - target[n])*(predicted[n] - target[n]);
                 }
             }
 
             // update the network parameters using accumulated gradients that 
             model.optimizer_step(w_gradients1, b_gradients1, w_gradients2, b_gradients2);
-            printf("minibatch %i is finished\n", minibatch);
+            //printf("minibatch %i is finished\n", minibatch);
         }
         printf("Episode = %d; Loss = %.2f \n ", episode, loss);
     }
@@ -176,17 +194,31 @@ int main(){
     vector<double> test_labels = read_mnist_labels(test_path_labels, output_size); // output_size = numer of labels
 
     int correct = 0;
-    for (auto i = 0; i < test_set_size; i++) {
+    double fraction_for_testing = 1.0;
+    for (auto i = 0; i < int(fraction_for_testing * test_set_size); i++) {
         vector<double> input = test_dataset[i];
         vector<double> target(output_size);
         int true_label = test_labels[i];
         target[true_label] = 1; // prepare the target vector in a way that only one element is non-zero
+        /*printf("target vector\n");
+        for(auto i = 0; i < output_size; i++){
+            cout << target[i] << " ";
+        }
+        cout << endl;*/
 
         vector<double> predicted = model.forward(input); // model prediction
-        int max_label = *max_element(begin(predicted), end(predicted));
-        if (max_label == true_label) correct++;
+        /*printf("predicted vector\n");
+        for(auto i = 0; i < output_size; i++){
+            cout << predicted[i] << " ";
+        }
+        cout << endl;*/
+
+        auto max_label = max_element(begin(predicted), end(predicted));
+        int predicted_label = distance(predicted.begin(), max_label);
+        if (predicted_label == true_label) correct++;
+        //printf("predicted label %i, true label %i.\n", predicted_label, true_label);
     }
-    printf("Number of correctly predicted images: %f\n", 1.0 * correct / (1.0 * test_set_size));
+    printf("Number of correctly predicted images: %f\n", 1.0 * correct / (fraction_for_testing * test_set_size));
 
 
     return 0;

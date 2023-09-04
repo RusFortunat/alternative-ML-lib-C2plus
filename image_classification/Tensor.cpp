@@ -69,17 +69,30 @@ vector<double> Tensor::forward(vector<double> &input_vector){
     for(auto i = 0; i < _hidden_size; i++){
         double sum = 0;
         for(auto j = 0; j < _input_size; j++){
-            sum += _W1[i][j] * input_vector[j] + _B1[i];
+            double activation = _W1[i][j] * input_vector[j] + _B1[i];
+            if (activation > 0) sum += activation; // ReLU
         }
         _hidden_vector[i] = sum;
     }
     // compute output activations
+    double total_sum = 0.0; // for softmax or normalization 
     for(auto i = 0; i < _output_size; i++){
-        double sum = 0;
+        double sum = 0.0;
         for(auto j = 0; j < _hidden_size; j++){
-            sum += _W2[i][j] * _hidden_vector[j] + _B2[i];
+            double activation = _W2[i][j] * _hidden_vector[j] + _B2[i];
+            if (activation > 0) sum += activation; // ReLU
         }
         predicted[i] = sum;
+        total_sum += exp(sum);
+    }
+    /*printf("predicted vector before softmax\n");
+    for(auto i = 0; i < _output_size; i++){
+        cout << predicted[i] << " ";
+    }*/
+    // do softmax
+    for(auto i = 0; i < _output_size; i++){
+        double element = exp(predicted[i]) / total_sum;
+        predicted[i] = element;
     }
 
     return predicted;
