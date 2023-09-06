@@ -107,11 +107,15 @@ int main(){
     int output_size = 10; // number of labels
     double learning_rate = 0.001;  
     int batch_size = 100;
-    int training_episodes = 5;
+    int training_episodes = 100;
 
-    // load images (path needs to be modified)
-    string train_path_images = "/Users/Ruslan.Mukhamadiarov/Work/ML-and-Physics/MNIST/train-images.idx3-ubyte";
-    string train_path_labels = "/Users/Ruslan.Mukhamadiarov/Work/ML-and-Physics/MNIST/train-labels.idx1-ubyte";
+    // load images (path needs to be modified); 
+    // My MAC path
+    //string train_path_images = "/Users/Ruslan.Mukhamadiarov/Work/ML-and-Physics/MNIST/train-images.idx3-ubyte";
+    //string train_path_labels = "/Users/Ruslan.Mukhamadiarov/Work/ML-and-Physics/MNIST/train-labels.idx1-ubyte";
+    // Windows path
+    string train_path_images = "D:/Work/data_sets/MNIST_handwritten_digits/train-images.idx3-ubyte";
+    string train_path_labels = "D:/Work/data_sets/MNIST_handwritten_digits/train-labels.idx1-ubyte";
     int data_set_size = 60000; // size of training data set
     vector<vector<double>> train_dataset = read_mnist_images(train_path_images, data_set_size, input_size); // input_size = image size
     vector<double> train_labels = read_mnist_labels(train_path_labels, output_size); // output_size = numer of labels
@@ -182,13 +186,17 @@ int main(){
             model.optimizer_step(w_gradients1, b_gradients1, w_gradients2, b_gradients2);
             //printf("minibatch %i is finished\n", minibatch);
         }
-        printf("Episode = %d; Loss = %.2f \n ", episode, loss);
+        printf("Episode = %d; Loss = %.2f \n", episode + 1, loss);
     }
     printf("The training is done. Time to see how well the network can classify the images..\n");
 
     // test your network
-    string test_path_images = "/Users/Ruslan.Mukhamadiarov/Work/ML-and-Physics/MNIST/t10k-images.idx3-ubyte";
-    string test_path_labels = "/Users/Ruslan.Mukhamadiarov/Work/ML-and-Physics/MNIST/t10k-labels.idx1-ubyte";
+    // MAC path
+    //string test_path_images = "/Users/Ruslan.Mukhamadiarov/Work/ML-and-Physics/MNIST/t10k-images.idx3-ubyte";
+    //string test_path_labels = "/Users/Ruslan.Mukhamadiarov/Work/ML-and-Physics/MNIST/t10k-labels.idx1-ubyte";
+    // Windows path
+    string test_path_images = "D:/Work/data_sets/MNIST_handwritten_digits/t10k-images.idx3-ubyte";
+    string test_path_labels = "D:/Work/data_sets/MNIST_handwritten_digits/t10k-labels.idx1-ubyte";
     int test_set_size = 10000; 
     vector<vector<double>> test_dataset = read_mnist_images(test_path_images, test_set_size, input_size); // input_size = image size
     vector<double> test_labels = read_mnist_labels(test_path_labels, output_size); // output_size = numer of labels

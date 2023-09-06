@@ -5,6 +5,7 @@
 #include <cmath>
 #include <vector>
 #include <ctime>
+#include <tuple>
 #include "Tensor.h"
 
 using namespace std;
