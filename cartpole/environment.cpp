@@ -29,10 +29,14 @@ Environment::~Environment(){
 // the function receives the action to push cartpole to the left or to the right
 vector<double> Environment::update(int action){
 
-    // 
+    // what do we modify with the action? I am not going to look what others did, and just increment the velocity
+    double velocity_increment = 0.01;
+    if(action == 0){ // push the cart to the left
+        velocity_increment *= -1.0;
+    }
+    _x_dot += velocity_increment;
 
-
-
+    // solve coupled EOMs; just a block, and a rod, attached from one end to it; no friction
 
 
 
