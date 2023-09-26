@@ -7,34 +7,25 @@ using namespace std;
 
 class Tensor{
     public:
-        // for now all tensors will have just a single hidden layer
-        Tensor(int input_size, int hidden_size, 
-        int output_size, double learning_rate); // constructor with random parameters
-        
-        ~Tensor();
+        // for now all tensors will have just a single hidden layer and random parameters
+        Tensor(int input_size, int hidden_size, int output_size, double learning_rate); // constructor
+        ~Tensor(); // destructor
 
         vector<double> forward(vector<double> &input_vector); // forwardprop with ReLU activation
         
-        int select_action(vector<double> state, double epsilon, int output_size);
+        int select_action(vector<double> state, double epsilon, int output_size); // e-greedy sampling
 
-        // compute gradients for backprop
-        void compute_gradients(vector<double>& input_vector, 
-            vector<double>& predicted_vector, 
-            vector<double>& target_vector,
-            vector<vector<double>>& w_gradients1, vector<double>& b_gradients1, 
-            vector<vector<double>>& w_gradients2, vector<double>& b_gradients2, int batch_size); 
-
-        // update network parameters
-        void optimizer_step(vector<vector<double>>& w_gradients1, vector<double>& b_gradients1,
-            vector<vector<double>>& w_gradients2, vector<double>& b_gradients2); 
+        // update network parameters (DQN stuff here)
+        void optimizer_step(vector <tuple <vector<double>, int, vector<double>, double>> ReplayBuffer, int batch_size);
         
         // allows accessing network parameters
-        tuple<vector<vector<double>>, vector<double>, 
-            vector<vector<double>>, vector<double>> model_parameters();
+        tuple<vector<vector<double>>, vector<double>, vector<vector<double>>, vector<double>> get_model_parameters();
 
-        // copy network parameters (for DQN)
         void copy_parameters(tuple<vector<vector<double>>, vector<double>,
-            vector<vector<double>>, vector<double>>);
+            vector<vector<double>>, vector<double>> net_params);
+
+        void soft_update(tuple<vector<vector<double>>, vector<double>,
+            vector<vector<double>>, vector<double>> net_params);
 
     private: 
         int _input_size;

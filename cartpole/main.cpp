@@ -27,22 +27,22 @@ int main(){
     double eps_decay = 1000.0;
     double tau = 0.005; // for soft update of target net parameters 
     double theta_fail = 0.1; // if theta exceeds this number, episode stops
-    double x_fail = 100; // if cart leaves the simulation box, episode fails;
+    double x_fail = 5; // if cart leaves the simulation box, episode fails;
     int goal = 2000; // train the network until the pole can stay up for at least 10k updates
 
     // we need two networks for DQN algorithm
-    Tensor targer_net(input_size, hidden_size, output_size, lr); // updated softly 
+    Tensor target_net(input_size, hidden_size, output_size, lr); // updated softly 
     Tensor policy_net(input_size, hidden_size, output_size, lr); // updated every step
-    tuple<vector<vector<double>>, vector<double>, vector<vector<double>>, vector<double>> policy_net_params = policy_net.model_parameters();
-    targer_net.copy_parameters(policy_net_params); // copy parameters 
+    tuple<vector<vector<double>>, vector<double>, vector<vector<double>>, vector<double>> policy_net_params = policy_net.get_model_parameters();
+    target_net.copy_parameters(policy_net_params); // copy parameters 
 
     // memory buffer
     vector <tuple <vector<double>, int, vector<double>, double>> ReplayBuffer(10000); // collect experiences here
 
     // main simulation loop
-    int episode_end = 0;
-    int episode = 0;
-    while (episode_end < goal) { 
+    int last_step = 0;
+    int episode = 1;
+    while (last_step < goal) {
 
         // initiate the cartpole model 
         Environment my_little_cartpole(M, m, L);
@@ -58,21 +58,23 @@ int main(){
             // get tuple of state, action, next_state, reward
             tuple<vector<double>, int, vector<double>, double> Transition = my_little_cartpole.update(action); 
             ReplayBuffer.push_back(Transition); // save it to the memory buffer
+            // check if done 
+            int done = 0; 
+            if (abs(my_little_cartpole._theta) > theta_fail || abs(my_little_cartpole._x) > x_fail) { done = 1; }
 
+            policy_net.optimizer_step(ReplayBuffer, batch_size);
+            // soft update of target network parameters
+            policy_net_params = policy_net.model_parameters();
+            target_net.soft_update(policy_net_params, tau);
 
+            // 
             int terminated = 0;
-            if (abs(my_little_cartpole._theta) > theta_fail || 
-                abs(my_little_cartpole._x) > x_fail) { // terminate episode 
+            if (done == 1) { // terminate episode 
                 printf("Episode ended after %d steps\n", steps_done);
-                terminated = 1;
-                episode_end = steps_done;
+                last_step = steps_done;
                 episode++;
                 break;
             }
-
-
-            policy_net.optimizer_step(state, action, reward);
-
         }
     }
 

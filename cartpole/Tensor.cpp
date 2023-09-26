@@ -55,7 +55,7 @@ Tensor::~Tensor(){
     // since all objects of the class are vectors, I am not sure if I should explicitly delete them here or not...
 }
 
-// forward propagation method with Linear
+// forward propagation method with ReLU; 
 vector<double> Tensor::forward(vector<double> &input_vector){
     // forwardprop is very simple really; just do the following:
     // 1. compute [z] = [W1][input] + [biases1]
@@ -95,7 +95,7 @@ vector<double> Tensor::forward(vector<double> &input_vector){
         predicted[i] = element;
     }
 
-    return predicted;
+    return predicted; // we treat the NN output as Q values
 }
 
 // select action using epsilon-greedy policy
@@ -136,7 +136,8 @@ void Tensor::compute_gradients(vector<double>& input_vector,
         if(predicted_vector[i] > 0){ // derivative of the relu is good 
             for (auto j = 0; j < _hidden_size; j++) {
                 if( _hidden_vector[j] != 0){ // y_j^l-1; if the prev activation is zero -- the contribution to grad is zero
-                    w_gradients2[i][j] += (1.0 / (1.0 * batch_size)) * 2 * (predicted_vector[i] - target_vector[i]) * _hidden_vector[j];
+                    w_gradients2[i][j] += (1.0 / (1.0 * batch_size)) * 2 * 
+                        (predicted_vector[i] - target_vector[i]) * _hidden_vector[j];
                 }
             }
             b_gradients2[i] += (1.0 / (1.0 * batch_size)) * 2 * (predicted_vector[i] - target_vector[i]);
@@ -183,7 +184,7 @@ void Tensor::optimizer_step(vector<vector<double>>& w_gradients1, vector<double>
     }
 }
 
-tuple<vector<vector<double>>, vector<double>, vector<vector<double>>, vector<double>> Tensor::model_parameters(){
+tuple<vector<vector<double>>, vector<double>, vector<vector<double>>, vector<double>> Tensor::get_model_parameters(){
 
     return make_tuple(_W1, _B1, _W2, _B2);
 }
@@ -191,5 +192,10 @@ tuple<vector<vector<double>>, vector<double>, vector<vector<double>>, vector<dou
 
 void Tensor::copy_parameters() {
 
+
+}
+
+void Tensor::soft_update(tuple<vector<vector<double>>, vector<double>,
+    vector<vector<double>>, vector<double>> net_params) {
 
 }
