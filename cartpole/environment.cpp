@@ -26,7 +26,7 @@ Environment::~Environment(){
 }
 
 // the function receives the action to push cartpole to the left or to the right
-vector<double> Environment::update(int action){
+tuple<vector<double>, int, vector<double>, double> Environment::update(int action){
 
     // Will copy this implementation from R. Sutton's book: http://incompleteideas.net/sutton/book/code/pole.c 
 

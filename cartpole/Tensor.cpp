@@ -11,12 +11,13 @@ using namespace std;
 
 // A constructor, that generates the neural network structure; 
 // To create a network with 1 hidden layer, i need to initialize 2 adjacency matrices and 2 bias vectors
-Tensor::Tensor(int input_size, int hidden_size, int output_size, double learning_rate){
+Tensor::Tensor(int input_size, int hidden_size, int output_size, double learning_rate, double gamma){
 
     _input_size = input_size;
     _hidden_size = hidden_size;
     _output_size = output_size;
     _learning_rate = learning_rate;
+    _gamma = gamma;
 
     // For a fully-connected network, the W1 matrix woud have (output_size x hidden_size) dimensions. 
     // Here I assume that z values are obtained by (W1 * input vector) + B1, or 
@@ -190,12 +191,33 @@ tuple<vector<vector<double>>, vector<double>, vector<vector<double>>, vector<dou
 }
 
 
-void Tensor::copy_parameters() {
-
-
+void Tensor::copy_parameters(tuple<vector<vector<double>>, vector<double>, vector<vector<double>>, vector<double>> net_params) {
+    _W1 = get<0>(net_params);
+    _B1 = get<1>(net_params);
+    _W2 = get<2>(net_params);
+    _B2 = get<3>(net_params);
 }
 
 void Tensor::soft_update(tuple<vector<vector<double>>, vector<double>,
-    vector<vector<double>>, vector<double>> net_params) {
+    vector<vector<double>>, vector<double>> net_params, double tau) {
 
+    vector<vector<double>> copy_policy_net_W1 = get<0>(net_params);
+    vector<double> copy_policy_net_B1 = get<1>(net_params);
+    vector<vector<double>> copy_policy_net_W2 = get<2>(net_params);
+    vector<double> copy_policy_net_B2 = get<3>(net_params);
+
+    // W1 & B1
+    for (auto i = 0; i < _hidden_size; i++) {
+        for (auto j = 0; j < _input_size; j++) {
+            _W1[i][j] = copy_policy_net_W1[i][j]*tau + _W1[i][j]*(1-tau);
+        }
+        _B1[i] = copy_policy_net_B1[i]*tau + _B1[i] * (1 - tau);
+    }
+    // W2 & B2
+    for (auto i = 0; i < _output_size; i++) {
+        for (auto j = 0; j < _hidden_size; j++) {
+            _W2[i][j] = copy_policy_net_W2[i][j] * tau + _W2[i][j] * (1 - tau);
+        }
+        _B2[i] = copy_policy_net_B2[i] * tau + _B2[i] * (1 - tau);
+    }
 }
