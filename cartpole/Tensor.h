@@ -15,6 +15,8 @@ class Tensor{
 
         vector<double> forward(vector<double> &input_vector); // forwardprop with ReLU activation
         
+        int select_action(vector<double> state, double epsilon, int output_size);
+
         // compute gradients for backprop
         void compute_gradients(vector<double>& input_vector, 
             vector<double>& predicted_vector, 
@@ -29,6 +31,10 @@ class Tensor{
         // allows accessing network parameters
         tuple<vector<vector<double>>, vector<double>, 
             vector<vector<double>>, vector<double>> model_parameters();
+
+        // copy network parameters (for DQN)
+        void copy_parameters(tuple<vector<vector<double>>, vector<double>,
+            vector<vector<double>>, vector<double>>);
 
     private: 
         int _input_size;

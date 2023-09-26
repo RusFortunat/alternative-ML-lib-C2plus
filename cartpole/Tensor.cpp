@@ -28,11 +28,11 @@ Tensor::Tensor(int input_size, int hidden_size, int output_size, double learning
     _B2.resize(output_size); // biases; 0 by default
     _hidden_vector.resize(hidden_size);
         
-    random_device rd{}; //doesn't work with my MinGW compiler, gives the same number... should work with other compilers
-    //srand(std::time(0));
-    //const int random_seed2 = rand();
-    //mt19937 RNG2{ random_seed2 };
-    mt19937 RNG2{rd()};
+    //random_device rd{}; //doesn't work with my MinGW compiler, gives the same number... should work with other compilers
+    srand(std::time(0));
+    const int random_seed2 = rand();
+    mt19937 RNG2{ random_seed2 };
+    //mt19937 RNG2{rd()};
     // I will go with the uniform distribution, that ranges from -(1/sqrt(input_size)):(1/sqrt(input_size))
     double range_w1 = 1.0/sqrt(1.0*input_size);
     uniform_real_distribution<double> w1_weights{ -range_w1, range_w1 };
@@ -96,6 +96,28 @@ vector<double> Tensor::forward(vector<double> &input_vector){
     }
 
     return predicted;
+}
+
+// select action using epsilon-greedy policy
+int Tensor::select_action(vector<double>& state, double epsilon, int output_size) {
+    srand(std::time(0));
+    const int random_seed2 = rand();
+    mt19937 RNG3{ random_seed2 };
+    uniform_real_distribution<double> dice{ 0, 1 };
+    uniform_int_distribution<int> action_dice{ 0, output_size - 1 };
+    double dice_throw = dice(RNG3);
+    int action = -1;
+
+    if (dice_throw > epsilon) { // greedy action
+        vector<double> predicted_actions = forward(state);
+        const int N = sizeof(predicted_actions) / sizeof(int);
+        action = distance(predicted_actions, max_element(predicted_actions, predicted_actions + N)); // max action
+    }
+    else {
+        action = action_dice(RNG3); // random action
+    }
+
+    return action;
 }
 
 // compute gradients here
@@ -164,4 +186,10 @@ void Tensor::optimizer_step(vector<vector<double>>& w_gradients1, vector<double>
 tuple<vector<vector<double>>, vector<double>, vector<vector<double>>, vector<double>> Tensor::model_parameters(){
 
     return make_tuple(_W1, _B1, _W2, _B2);
+}
+
+
+void Tensor::copy_parameters() {
+
+
 }
