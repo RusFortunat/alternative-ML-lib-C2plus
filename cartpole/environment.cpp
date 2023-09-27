@@ -3,6 +3,7 @@
 #include <iostream>
 #include <cmath>
 #include <vector>
+#include <tuple>
 #include <ctime>
 #include "Environment.h"
 
@@ -67,5 +68,7 @@ tuple<vector<double>, int, vector<double>, double> Environment::update(int actio
 
 vector<double> Environment::get_state() {
 
-    return _x, _x_dot, _theta, _theta_dot;
+    vector<double> state = { _x, _x_dot, _theta, _theta_dot };
+
+    return state;
 }

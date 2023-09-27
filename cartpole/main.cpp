@@ -2,10 +2,14 @@
 // Authors: Ruggero Malenfant 
 #include <iostream>
 #include <random>
+#include <string>
 #include <cmath>
 #include <vector>
 #include <ctime>
-#include <cassert>
+#include <algorithm>
+#include <iomanip>
+#include <iterator>
+#include <tuple>
 #include "Tensor.h"
 #include "Environment.h"
 
@@ -32,8 +36,8 @@ int main(){
     int terminal_episode = 1000; // if the system doesn't learn to balance the pole in this N number of trials, terminate simulation
 
     // we need two networks for DQN algorithm: policy_net used for choosing actions from observations, and target_net computes value functions V(s, t+1) 
-    Tensor target_net(input_size, hidden_size, output_size, lr, gamma); // updated softly 
-    Tensor policy_net(input_size, hidden_size, output_size, lr, gamma); // updated every step
+    Tensor target_net(input_size, hidden_size, output_size, lr); // updated softly 
+    Tensor policy_net(input_size, hidden_size, output_size, lr); // updated every step
     tuple<vector<vector<double>>, vector<double>, vector<vector<double>>, vector<double>> policy_net_params = policy_net.get_model_parameters();
     target_net.copy_parameters(policy_net_params); // copy parameters 
 
@@ -76,14 +80,16 @@ int main(){
                 vector<vector<double>> w_gradients2(output_size, vector<double>(hidden_size));
                 vector<double> b_gradients1(hidden_size);
                 vector<double> b_gradients2(output_size);
-                // select (batch_size) number of transitions from ReplayBuffer
-                vector<tuple <vector<double>, int, vector<double>, double>> batch; // state, action, next_state, reward
-                size_t m{ batch_size };
-                ranges::sample(replay_buffer, std::back_inserter(batch), m, RNG);
-                assert(batch.size() == m);
+                // create a batch of samples
+                int current_bufffer_size = replay_buffer.size();
+                int batch[current_bufffer_size];
+                for (auto i = 0; i < current_bufffer_size; i++) batch[i] = i;
+                random_shuffle(batch, batch + current_bufffer_size);
+
                 // I follow this pytorch tutorial here: https://pytorch.org/tutorials/intermediate/reinforcement_q_learning.html
                 for (auto i = 0; i < batch_size; i++) {
-                    tuple <vector<double>, int, vector<double>, double> sampled_transition = batch[i];
+                    int index = batch[i];
+                    tuple <vector<double>, int, vector<double>, double> sampled_transition = replay_buffer[i];
                     vector<double> state = get<0>(sampled_transition);
                     int action = get<1>(sampled_transition);
                     vector<double> next_state = get<2>(sampled_transition);
@@ -92,7 +98,8 @@ int main(){
                     double Q_s_a = all_Qs[action];
 
                     vector<double> all_Qs_next = target_net.forward(next_state); // the reason why i don't implement this block inside Tensor class
-                    double V_s_next = max_element(begin(all_Qs_next), end(all_Qs_next));
+                    vector<double>::iterator result = max_element(all_Qs_next.begin(), all_Qs_next.end());
+                    double V_s_next = *result;
 
                     double expected_state_action_values = V_s_next * gamma + reward;
                     double delta = Q_s_a - expected_state_action_values;
@@ -114,7 +121,8 @@ int main(){
             }
 
             // the cartpole failed, reward = -1
-            if (transition[3] == -1) {
+            double reward = get<3>(transition);
+            if (reward == -1) {
                 printf("Episode %d. Episode ended after %d steps\n", episode, steps_done);
                 last_step = steps_done;
                 episode_durations.push_back(steps_done);

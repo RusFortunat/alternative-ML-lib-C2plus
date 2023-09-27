@@ -5,25 +5,24 @@
 #include <cmath>
 #include <vector>
 #include <ctime>
+#include <tuple>
+#include <iterator>
+#include <algorithm>
+#include <iomanip>
 #include "Tensor.h"
 
 using namespace std;
 
-//random_device rd{}; //doesn't work with my MinGW compiler, gives the same number... should work with other compilers
-//mt19937 RNG2{rd()};
-srand(std::time(0));
-const int random_seed = rand();
-mt19937 RNG{ random_seed };
+
 
 // A constructor, that generates the neural network structure; 
 // To create a network with 1 hidden layer, i need to initialize 2 adjacency matrices and 2 bias vectors
-Tensor::Tensor(int input_size, int hidden_size, int output_size, double learning_rate, double gamma){
+Tensor::Tensor(int input_size, int hidden_size, int output_size, double learning_rate){
 
     _input_size = input_size;
     _hidden_size = hidden_size;
     _output_size = output_size;
     _learning_rate = learning_rate;
-    _gamma = gamma;
 
     // For a fully-connected network, the W1 matrix woud have (output_size x hidden_size) dimensions. 
     // Here z values are obtained by (W1 * input vector) + B1, or z_i = \sum_{i=0}^{input_size} W_ij * input_j + b_i. 
@@ -35,7 +34,13 @@ Tensor::Tensor(int input_size, int hidden_size, int output_size, double learning
     _input_vector.resize(input_size);
     _hidden_vector.resize(hidden_size);
     _predicted_vector.resize(output_size);
-        
+       
+    //random_device rd{}; //doesn't work with my MinGW compiler, gives the same number... should work with other compilers
+    //mt19937 RNG2{rd()};
+    srand(std::time(0));
+    const int random_seed = rand();
+    mt19937 RNG{ random_seed };
+
     // I will go with the uniform distribution, that ranges from -(1/sqrt(input_size)):(1/sqrt(input_size))
     double range_w1 = 1.0/sqrt(1.0*input_size);
     uniform_real_distribution<double> w1_weights{ -range_w1, range_w1 };
@@ -87,6 +92,12 @@ vector<double> Tensor::forward(vector<double> &input_vector){
 // select action using epsilon-greedy policy
 int Tensor::select_action(vector<double>& state, double epsilon, int output_size) {
 
+    //random_device rd{}; //doesn't work with my MinGW compiler, gives the same number... should work with other compilers
+    //mt19937 RNG2{rd()};
+    srand(std::time(0));
+    const int random_seed = rand();
+    mt19937 RNG{ random_seed };
+
     uniform_real_distribution<double> dice{ 0, 1 };
     uniform_int_distribution<int> action_dice{ 0, output_size - 1 };
     double dice_throw = dice(RNG);
@@ -94,8 +105,8 @@ int Tensor::select_action(vector<double>& state, double epsilon, int output_size
 
     if (dice_throw > epsilon) { // greedy action
         vector<double> predicted_actions = forward(state);
-        const int N = sizeof(predicted_actions) / sizeof(int);
-        action = distance(predicted_actions, max_element(predicted_actions, predicted_actions + N)); // max action
+        vector<double>::iterator result = max_element(predicted_actions.begin(), predicted_actions.end());
+        action = *result;
     }
     else {
         action = action_dice(RNG); // random action
@@ -122,7 +133,7 @@ void Tensor::compute_gradients(
             w_gradients2[action][j] += (1.0 / (1.0 * batch_size)) * 2 * loss * _hidden_vector[j];
         }
     }
-    b_gradients2[action] += (1.0 / (1.0 * batch_size)) * 2 * loss[i];
+    b_gradients2[action] += (1.0 / (1.0 * batch_size)) * 2 * loss;
     //}
     
     // W1 & B1
