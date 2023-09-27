@@ -38,7 +38,7 @@ int main(){
     target_net.copy_parameters(policy_net_params); // copy parameters 
 
     // memory buffer
-    vector <tuple <vector<double>, int, vector<double>, double>> replay_buffer(10000); // collect experiences here
+    vector <tuple <vector<double>, int, vector<double>, double>> replay_buffer; // collect experiences here
 
     // RNG
     //random_device rd{}; //doesn't work with my MinGW compiler, gives the same number... should work with other compilers
@@ -68,47 +68,50 @@ int main(){
             tuple<vector<double>, int, vector<double>, double> transition = my_little_cartpole.update(action); 
             replay_buffer.push_back(transition); // save tuple to the memory buffer
 
-            // compute loss and W & B gradients; I don't know how to do it better... If you do, please let me know
-            vector<double> loss(output_size);
-            vector<vector<double>> w_gradients1(hidden_size, vector<double>(input_size));
-            vector<vector<double>> w_gradients2(output_size, vector<double>(hidden_size));
-            vector<double> b_gradients1(hidden_size);
-            vector<double> b_gradients2(output_size);
-            // select (batch_size) number of transitions from ReplayBuffer
-            vector<tuple <vector<double>, int, vector<double>, double>> batch; // state, action, next_state, reward
-            size_t m{ batch_size };
-            ranges::sample(replay_buffer, std::back_inserter(batch), m, RNG);
-            assert(batch.size() == m);
-            // I follow this pytorch tutorial here: https://pytorch.org/tutorials/intermediate/reinforcement_q_learning.html
-            for (auto i = 0; i < batch_size; i++) {
-                tuple <vector<double>, int, vector<double>, double> sampled_transition = batch[i];
-                vector<double> state = get<0>(sampled_transition);
-                int action = get<1>(sampled_transition);
-                vector<double> next_state = get<2>(sampled_transition);
-                double reward = get<3>(sampled_transition);
-                vector<double> all_Qs = policy_net.forward(state); // the reason why i have this code block here; solution? pass class instance to a function?
-                double Q_s_a = all_Qs[action];
+            // we need to gather enough experiences to fill our table before start updating the network paramters
+            if (steps_done >= batch_size) { 
+                // compute loss and W & B gradients; I don't know how to do it better... If you do, please let me know
+                double loss = 0.0;
+                vector<vector<double>> w_gradients1(hidden_size, vector<double>(input_size));
+                vector<vector<double>> w_gradients2(output_size, vector<double>(hidden_size));
+                vector<double> b_gradients1(hidden_size);
+                vector<double> b_gradients2(output_size);
+                // select (batch_size) number of transitions from ReplayBuffer
+                vector<tuple <vector<double>, int, vector<double>, double>> batch; // state, action, next_state, reward
+                size_t m{ batch_size };
+                ranges::sample(replay_buffer, std::back_inserter(batch), m, RNG);
+                assert(batch.size() == m);
+                // I follow this pytorch tutorial here: https://pytorch.org/tutorials/intermediate/reinforcement_q_learning.html
+                for (auto i = 0; i < batch_size; i++) {
+                    tuple <vector<double>, int, vector<double>, double> sampled_transition = batch[i];
+                    vector<double> state = get<0>(sampled_transition);
+                    int action = get<1>(sampled_transition);
+                    vector<double> next_state = get<2>(sampled_transition);
+                    double reward = get<3>(sampled_transition);
+                    vector<double> all_Qs = policy_net.forward(state); // the reason why i have this code block here; solution? pass class instance to a function?
+                    double Q_s_a = all_Qs[action];
 
-                vector<double> all_Qs_next = target_net.forward(next_state); // the reason why i don't implement this block inside Tensor class
-                double V_s_next = max_element(begin(all_Qs_next), end(all_Qs_next));
+                    vector<double> all_Qs_next = target_net.forward(next_state); // the reason why i don't implement this block inside Tensor class
+                    double V_s_next = max_element(begin(all_Qs_next), end(all_Qs_next));
 
-                double expected_state_action_values = V_s_next * gamma + reward;
-                double delta = Q_s_a - expected_state_action_values;
-                // Huber loss
-                if (abs(delta) <= 1) {
-                    loss[action] += 0.5 * delta * delta / (1.0 * batch_size);
+                    double expected_state_action_values = V_s_next * gamma + reward;
+                    double delta = Q_s_a - expected_state_action_values;
+                    // Huber loss
+                    if (abs(delta) <= 1) {
+                        loss = 0.5 * delta * delta / (1.0 * batch_size);
+                    }
+                    else {
+                        loss = (abs(delta) - 0.5) / (1.0 * batch_size);
+                    }
+
+                    //gradients; potential problem -- hidden vectors; i think they should stay same, and i don't have to use forward() again
+                    policy_net.compute_gradients(w_gradients1, b_gradients1, w_gradients2, b_gradients2, batch_size, action, loss);
                 }
-                else {
-                    loss[action] += (abs(delta) - 0.5) / (1.0 * batch_size);
-                }
 
-                //gradients; potential problem -- hidden vectors; i think they should stay same, and i don't have to use forward() again
-                policy_net.compute_gradients(w_gradients1, b_gradients1, w_gradients2, b_gradients2, batch_size, loss);
+                policy_net.optimizer_step(w_gradients1, b_gradients1, w_gradients2, b_gradients2); // update policy_net parameters
+                policy_net_params = policy_net.get_model_parameters(); // copy them
+                target_net.soft_update(policy_net_params, tau); // soft update of target network parameters
             }
-
-            policy_net.optimizer_step(w_gradients1, b_gradients1, w_gradients2, b_gradients2); // update policy_net parameters
-            policy_net_params = policy_net.get_model_parameters(); // copy them
-            target_net.soft_update(policy_net_params, tau); // soft update of target network parameters
 
             // the cartpole failed, reward = -1
             if (transition[3] == -1) {

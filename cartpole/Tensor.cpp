@@ -107,34 +107,30 @@ int Tensor::select_action(vector<double>& state, double epsilon, int output_size
 // compute gradients here
 void Tensor::compute_gradients(
     vector<vector<double>>& w_gradients1, vector<double>& b_gradients1,
-    vector<vector<double>>& w_gradients2, vector<double>& b_gradients2, int batch_size, vector<double> loss) {
+    vector<vector<double>>& w_gradients2, vector<double>& b_gradients2, int batch_size, int action, double loss) {
     // for ReLU activation:
     // d(loss_i)/dw_ij = 2*(y_i-t_i)*\theta(z_i)*\sum_j y_j^l-1, where loss_i = (y_i - t_i)^2,
     // y_i=f(z_i) is the output value, t_i is the target value, y_j^l-1 is the activation from the previous layer
 
     // W2 & B2
-    for (auto i = 0; i < _output_size; i++) {
-        // if the i-th activation of output layer y_i = 0, none of the w_ij will be updated due to ReLU activation
-        //if (_predicted_vector[i] > 0) { // derivative of the relu -- do i need this for Huber loss ??? CHECK!!!
-        for (auto j = 0; j < _hidden_size; j++) {
-            if (_hidden_vector[j] != 0) { // y_j^l-1; if the prev activation is zero -- the contribution to grad is zero
-                w_gradients2[i][j] += (1.0 / (1.0 * batch_size)) * 2 * loss[i] * _hidden_vector[j];
-            }
+    // if the i-th activation of output layer y_i = 0, none of the w_ij will be updated due to ReLU activation
+    //if (_predicted_vector[i] > 0) { // derivative of the relu -- do i need this for Huber loss ??? CHECK!!!
+
+    // If I am right, I need to update only weights and biases, that affect Q(s,a) that is in question, i.e., for which we computed \delta
+    for (auto j = 0; j < _hidden_size; j++) {
+        if (_hidden_vector[j] != 0) { // y_j^l-1; if the prev activation is zero -- the contribution to grad is zero
+            w_gradients2[action][j] += (1.0 / (1.0 * batch_size)) * 2 * loss * _hidden_vector[j];
         }
-        b_gradients2[i] += (1.0 / (1.0 * batch_size)) * 2 * loss[i];
-        //}
     }
+    b_gradients2[action] += (1.0 / (1.0 * batch_size)) * 2 * loss[i];
+    //}
+    
     // W1 & B1
     for (auto i = 0; i < _hidden_size; i++) {
         // if the i-th activation of output layer y_i = 0, none of the w_ij will be updated due to ReLU activation
         if (_hidden_vector[i] > 0) {
             // compute dC/dy_j^l-1
-            double dC_dy_prev = 0;
-            for (auto k = 0; k < _output_size; k++) {
-                // if (_predicted_vector[k] > 0) { -- CHECK AGAIN!!! 
-                    dC_dy_prev += 2 * loss[k] * _W2[k][i];
-                //}
-            }
+            double dC_dy_prev = 2 * loss * _W2[action][i]; // same here, I think we only need to work with Q(s,a)
 
             for (auto j = 0; j < _input_size; j++) {
                 if (_input_vector[j] != 0) { // y_j^l-1; if the prev activation is zero -- the whole grad is zero
