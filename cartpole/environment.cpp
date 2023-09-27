@@ -34,13 +34,13 @@ tuple<vector<double>, int, vector<double>, double> Environment::update(int actio
     double Force = action == 0 ? -10.0 : 10.0; // push the cart to the left for action = 0; otherwise to the right
     double TAU = 0.02; // time increment
     double g = 9.8; // gravity
-    double theta_fail = 0.1; // if theta exceeds this number, episode stops
-    double x_fail = 5;      // if cart leaves the simulation box, episode fails;
+    double theta_fail = 0.2; // if theta exceeds this number, episode stops; about 12 degrees
+    double x_fail = 2.5;      // if cart leaves the simulation box, episode fails;
     double costheta = cos(_theta);
     double sintheta = sin(_theta);
 
-    double temp = (Force + _L * _theta_dot * _theta_dot * sintheta) / (_M + _m);
-    double thetaacc = (g * sintheta - costheta * temp) / (_L * (4.0/3.0 - _m * costheta * costheta / (_M + _m)));
+    double temp = (Force + _L * _m * _theta_dot * _theta_dot * sintheta) / (_M + _m);
+    double thetaacc = (g * sintheta - costheta * temp) / (_L * (1.33333333 - _m * costheta * costheta / (_M + _m)));
     double xacc = temp - _m * _L * thetaacc * costheta / (_M + _m);
 
     vector<double> current_state = { _x, _x_dot, _theta, _theta_dot };

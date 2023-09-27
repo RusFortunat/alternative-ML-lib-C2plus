@@ -17,10 +17,10 @@ using namespace std;
 
 int main(){
 
-    // cartpole parameters
-    double M = 10;
-    double m = 1;
-    double L = 5;
+    // cartpole parameters; I chosen same parameters as Sutton
+    double M = 1.0;
+    double m = 0.1;
+    double L = 0.5; /* actually half the pole's length */
     // network parameters
     int input_size = 4;     // x, x_dot, theta, theta_dot
     int hidden_size = 32;
