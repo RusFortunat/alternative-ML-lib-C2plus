@@ -35,10 +35,10 @@ Tensor::Tensor(int input_size, int hidden_size, int output_size, double learning
     _hidden_vector.resize(hidden_size);
     _predicted_vector.resize(output_size);
 
-    random_device rd{}; //doesn't work with my MinGW compiler, gives the same number... should work with other compilers
-    mt19937 RNG{rd()};
+    //random_device rd{}; //doesn't work with my MinGW compiler, gives the same number... should work with other compilers
+    //mt19937 RNG{rd()};
 
-    //mt19937 RNG{ random_seed };
+    mt19937 RNG{ random_seed };
 
     // I will go with the uniform distribution, that ranges from -(1/sqrt(input_size)):(1/sqrt(input_size))
     double range_w1 = 1.0 / sqrt(1.0 * input_size);
@@ -91,10 +91,10 @@ vector<double> Tensor::forward(vector<double>& input_vector) {
 // select action using epsilon-greedy policy
 int Tensor::select_action(vector<double>& state, double epsilon) {
 
-    random_device rd{}; //doesn't work with my MinGW compiler, gives the same number... should work with other compilers
-    mt19937 RNG{rd()};
-    //int random_seed = rand();
-    //mt19937 RNG{ random_seed };
+    //random_device rd{}; //doesn't work with my MinGW compiler, gives the same number... should work with other compilers
+    //mt19937 RNG{rd()};
+    int random_seed = rand();
+    mt19937 RNG{ random_seed };
 
     uniform_real_distribution<double> dice(0.0, 1.0);
     uniform_int_distribution<int> action_dice(0, _output_size - 1);

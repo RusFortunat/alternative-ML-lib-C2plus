@@ -10,6 +10,7 @@
 #include <iomanip>
 #include <iterator>
 #include <tuple>
+#include <fstream>
 #include "Tensor.h"
 #include "Environment.h"
 
@@ -23,9 +24,9 @@ int main() {
     double L = 0.5; /* actually half the pole's length */
     // network parameters
     int input_size = 4;     // x, x_dot, theta, theta_dot
-    int hidden_size = 16;
+    int hidden_size = 64;
     int output_size = 2;    // two actions - push to the left or to the right
-    int batch_size = 10;   // number of experiences sampled from the replay buffer
+    int batch_size = 128;   // number of experiences sampled from the replay buffer
     double gamma = 0.99;    // to compute expected return
     double lr = 0.001;      // learning rate
     double eps_start = 0.9; // for greedy algorithm; at the beginning do more exploration and choose random actions
@@ -55,11 +56,11 @@ int main() {
     vector <tuple <vector<double>, int, vector<double>, double>> replay_buffer; // collect experiences here
 
     // RNG
-    random_device rd{}; //doesn't work with my MinGW compiler, gives the same number... should work with other compilers
-    mt19937 RNG{rd()};
-    //srand(std::time(0));
-    //random_seed = rand();
-    //mt19937 RNG{ random_seed };
+    //random_device rd{}; //doesn't work with my MinGW compiler, gives the same number... should work with other compilers
+    //mt19937 RNG{rd()};
+    srand(std::time(0));
+    random_seed = rand();
+    mt19937 RNG{ random_seed };
 
     // main simulation loop
     int print_stuff = 0; // 0 do not print; 1 print; for unit tests
@@ -143,13 +144,16 @@ int main() {
                     double Q_s_a = all_Q_s_a[sampled_action];
                     if (print_stuff == 1) printf("selected Q(s,a) = %f\n", Q_s_a);
                     // V(s)
-                    vector<double> all_Qs_next = target_net.forward(sampled_next_state); // the reason why i don't implement this block inside Tensor class
-                    if (print_stuff == 1) printf("all Q(s+1,a)\n");
-                    if (print_stuff == 1) {
-                        for (auto a = 0; a < all_Qs_next.size(); a++) cout << a << " " << all_Qs_next[a] << endl;
+                    double Qs_max_next = 0.0;
+                    if (sampled_reward >= 0) {
+                        vector<double> all_Qs_next = target_net.forward(sampled_next_state); // the reason why i don't implement this block inside Tensor class
+                        if (print_stuff == 1) printf("all Q(s+1,a)\n");
+                        if (print_stuff == 1) {
+                            for (auto a = 0; a < all_Qs_next.size(); a++) cout << a << " " << all_Qs_next[a] << endl;
+                        }
+                        vector<double>::iterator result = max_element(all_Qs_next.begin(), all_Qs_next.end());
+                        Qs_max_next = *result;
                     }
-                    vector<double>::iterator result = max_element(all_Qs_next.begin(), all_Qs_next.end());
-                    double Qs_max_next = *result;
                     if (print_stuff == 1) printf("max Q(s+1,a) = %f\n", Qs_max_next);
 
                     double expected_state_action_values = Qs_max_next * gamma + sampled_reward;
@@ -158,19 +162,18 @@ int main() {
                     if (print_stuff == 1) printf("delta = %f\n", delta);
 
                     // Huber loss
-                    /*if (abs(delta) <= 1) {
-                        loss = 0.5 * delta * delta / (1.0 * batch_size);
+                    double loss = 0;
+                    if (abs(delta) <= 1) {
+                        loss = 0.5 * delta * delta;
                     }
                     else {
-                        loss = (abs(delta) - 0.5) / (1.0 * batch_size);
-                    }*/
-
-
-                    //printf("loss = %f\n", loss);
+                        loss = (abs(delta) - 0.5);
+                    }
+                    if (print_stuff == 1) printf("loss = %f\n", loss);
 
                     //gradients; potential problem -- hidden vectors; i think they should stay same, and i don't have to use forward() again
                     // for now, let us pass TD difference, not loss
-                    policy_net.compute_gradients(w_gradients1, b_gradients1, w_gradients2, b_gradients2, batch_size, sampled_action, delta);
+                    policy_net.compute_gradients(w_gradients1, b_gradients1, w_gradients2, b_gradients2, batch_size, sampled_action, loss);
                     if (print_stuff == 1) printf("gradients are computed!\n");
                 }
 
@@ -183,7 +186,7 @@ int main() {
 
             // the cartpole failed, reward = -1
             double reward = get<3>(transition);
-            if (reward == -1) {
+            if (reward < 0) {
                 printf("Episode %d. Episode ended after %d steps\n", episode, steps_done);
                 last_step = steps_done;
                 episode_durations.push_back(steps_done);
@@ -202,6 +205,13 @@ int main() {
     if (episode < terminal_episode) {
         printf("The training goal has been achieved after %d episodes\n", episode - 1);
     }
+	
+	string filename = "training_output.txt";
+    ofstream output(filename.c_str(), std::ofstream::out);
+    for (auto ep = 0; ep < episode - 1; ep++) {
+        output << ep + 1 << "\t" << episode_durations[ep] << endl;
+    }
+    output.close();
 
     return 0;
 }
