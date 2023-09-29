@@ -12,7 +12,7 @@ class Tensor{
         ~Tensor(); // destructor
 
         vector<double> forward(vector<double> &input_vector); // forwardprop with ReLU activation
-        int select_action(vector<double>& state, double epsilon, int output_size); // e-greedy sampling
+        int select_action(vector<double>& state, double epsilon); // e-greedy sampling
         
         void compute_gradients(vector<vector<double>>& w_gradients1, vector<double>& b_gradients1,
             vector<vector<double>>& w_gradients2, vector<double>& b_gradients2, int batch_size, int action, double loss);

@@ -34,7 +34,7 @@ tuple<vector<double>, int, vector<double>, double> Environment::update(int& acti
     double Force = passed_action == 0 ? -10.0 : 10.0; // push the cart to the left for action = 0; otherwise to the right
     double TAU = 0.02; // time increment
     double g = 9.8; // gravity
-    double theta_fail = 0.2; // if theta exceeds this number, episode stops; about 12 degrees
+    double theta_fail = 12.0 * 2.0 * 3.141592653 / 360.0; // if theta exceeds this number, episode stops; about 12 degrees
     double x_fail = 2.5;      // if cart leaves the simulation box, episode fails;
     double costheta = cos(_theta);
     double sintheta = sin(_theta);
@@ -57,7 +57,7 @@ tuple<vector<double>, int, vector<double>, double> Environment::update(int& acti
     // terminate episode if cart goes to far or tilts too much
     if (abs(_theta) > theta_fail || abs(_x) > x_fail) {
         reward = -1.0;
-        next_state.erase(next_state.begin(), next_state.begin() + next_state.size()); // empty vector, equivalent to python's next_state=None
+        //next_state.erase(next_state.begin(), next_state.begin() + next_state.size()); // empty vector, equivalent to python's next_state=None
         //printf("Failure! the max angle or distance values are exceeded!\n");
     }
 

@@ -15,7 +15,7 @@
 
 using namespace std;
 
-int main(){
+int main() {
 
     // cartpole parameters; I chosen same parameters as Sutton
     double M = 1.0;
@@ -23,9 +23,9 @@ int main(){
     double L = 0.5; /* actually half the pole's length */
     // network parameters
     int input_size = 4;     // x, x_dot, theta, theta_dot
-    int hidden_size = 32;
+    int hidden_size = 16;
     int output_size = 2;    // two actions - push to the left or to the right
-    int batch_size = 128;   // number of experiences sampled from the replay buffer
+    int batch_size = 10;   // number of experiences sampled from the replay buffer
     double gamma = 0.99;    // to compute expected return
     double lr = 0.001;      // learning rate
     double eps_start = 0.9; // for greedy algorithm; at the beginning do more exploration and choose random actions
@@ -55,15 +55,16 @@ int main(){
     vector <tuple <vector<double>, int, vector<double>, double>> replay_buffer; // collect experiences here
 
     // RNG
-    //random_device rd{}; //doesn't work with my MinGW compiler, gives the same number... should work with other compilers
-    //mt19937 RNG2{rd()};
-    srand(std::time(0));
-    random_seed = rand();
-    mt19937 RNG{ random_seed };
+    random_device rd{}; //doesn't work with my MinGW compiler, gives the same number... should work with other compilers
+    mt19937 RNG{rd()};
+    //srand(std::time(0));
+    //random_seed = rand();
+    //mt19937 RNG{ random_seed };
 
     // main simulation loop
+    int print_stuff = 0; // 0 do not print; 1 print; for unit tests
     vector<int> episode_durations;
-    int episode = 1; 
+    int episode = 1;
     int last_step = 0;
     while (last_step < goal) {
 
@@ -72,28 +73,34 @@ int main(){
         // initiate the cartpole model 
         Environment my_little_cartpole(M, m, L);
 
-
         // start balancing the pole
         for (auto steps_done = 0; steps_done < goal; steps_done++) {
-            //printf("time step = %d\n", steps_done);
             // select action
+            if (print_stuff == 1) printf("time step = %d\n", steps_done);
             current_epsilon = eps_end + (eps_start - eps_end) * exp(-(1.0 * steps_done) / eps_decay);
-            printf("current epsilon %f\n", current_epsilon);
+            if (print_stuff == 1) printf("current epsilon %f\n", current_epsilon);
             vector<double> state = my_little_cartpole.get_state(); // x, x_dot, theta, theta_dot; all zero at the beginning of the simulation
-            printf("current state: x = %f, x_dot = %f, theta = %f, theta_dot = %f\n", state[0], state[1], state[2], state[3]);
-            int action = policy_net.select_action(state, current_epsilon, output_size); // 0 or 1 (left or right push)
-            printf("selected action: %d\n", action);
+            if (print_stuff == 1) printf("current state: x = %f, x_dot = %f, theta = %f, theta_dot = %f\n", state[0], state[1], state[2], state[3]);
+            int action = policy_net.select_action(state, current_epsilon); // 0 or 1 (left or right push)
+            if (print_stuff == 1) printf("selected action: %d\n", action);
             // get tuple ( state, action, next_state, reward )
             tuple<vector<double>, int, vector<double>, double> transition = my_little_cartpole.update(action);
             vector<double> new_state = my_little_cartpole.get_state(); // x, x_dot, theta, theta_dot; all zero at the beginning of the simulation
-            printf("new state: x = %f, x_dot = %f, theta = %f, theta_dot = %f\n", new_state[0], new_state[1], new_state[2], new_state[3]);
+            if (print_stuff == 1) printf("new state: x = %f, x_dot = %f, theta = %f, theta_dot = %f\n", new_state[0], new_state[1], new_state[2], new_state[3]);
+            //printf("policy network parameters:\n");
+            //policy_net.print_parameters();
+            /*double print_saved_action = get<1>(transition);
+            if (print_stuff == 1) printf("saved action: %d\n", print_saved_action);
+            if (print_saved_action == 2) {
+                printf("Error!\n");
+            }*/
             double print_reward = get<3>(transition);
-            printf("reward = %f\n\n", print_reward);
-            
+            if (print_stuff == 1) printf("reward = %f\n\n", print_reward);
+
             replay_buffer.push_back(transition); // save tuple to the memory buffer
 
             // we need to gather enough experiences to fill our table before start updating the network paramters
-            if (steps_done >= batch_size) { 
+            if (replay_buffer.size() >= batch_size) {
                 // compute loss and W & B gradients; I don't know how to do it better... If you do, please let me know
                 double loss = 0.0;
                 vector<vector<double>> w_gradients1(hidden_size, vector<double>(input_size));
@@ -102,42 +109,76 @@ int main(){
                 vector<double> b_gradients2(output_size);
                 // create a batch of samples
                 int current_bufffer_size = replay_buffer.size();
-                int batch[current_bufffer_size];
-                for (auto i = 0; i < current_bufffer_size; i++) batch[i] = i;
-                random_shuffle(batch, batch + current_bufffer_size);
+                if (print_stuff == 1) printf("current buffer size %d\n", current_bufffer_size);
+                vector<int> batch(current_bufffer_size);
+                //printf("batch before shuffling\n");
+                for (auto i = 0; i < current_bufffer_size; i++) {
+                    batch[i] = i; //cout << batch[i] << " ";
+                }
+                //cout << endl;
+                random_shuffle(batch.begin(), batch.end());
+                //printf("batch after shuffling\n");
+                //for (auto i = 0; i < current_bufffer_size; i++) cout << batch[i] << " ";
+                //cout << endl;
 
                 // I follow this pytorch tutorial here: https://pytorch.org/tutorials/intermediate/reinforcement_q_learning.html
                 for (auto i = 0; i < batch_size; i++) {
                     int index = batch[i];
-                    tuple <vector<double>, int, vector<double>, double> sampled_transition = replay_buffer[i];
-                    vector<double> state = get<0>(sampled_transition);
-                    int action = get<1>(sampled_transition);
-                    vector<double> next_state = get<2>(sampled_transition);
-                    double reward = get<3>(sampled_transition);
-                    vector<double> all_Qs = policy_net.forward(state); // the reason why i have this code block here; solution? pass class instance to a function?
-                    double Q_s_a = all_Qs[action];
-
-                    vector<double> all_Qs_next = target_net.forward(next_state); // the reason why i don't implement this block inside Tensor class
+                    tuple <vector<double>, int, vector<double>, double> sampled_transition = replay_buffer[index];
+                    if (print_stuff == 1) printf("sampled transition %d\n", index);
+                    vector<double> sampled_state = get<0>(sampled_transition);
+                    if (print_stuff == 1) printf("sampled state: x = %f, x_dot = %f, theta = %f, theta_dot = %f\n", sampled_state[0], sampled_state[1], sampled_state[2], sampled_state[3]);
+                    int sampled_action = get<1>(sampled_transition);
+                    if (print_stuff == 1) printf("sampled action %d\n", sampled_action);
+                    vector<double> sampled_next_state = get<2>(sampled_transition);
+                    if (print_stuff == 1) printf("sampled next state: x = %f, x_dot = %f, theta = %f, theta_dot = %f\n", sampled_next_state[0], sampled_next_state[1], sampled_next_state[2], sampled_next_state[3]);
+                    double sampled_reward = get<3>(sampled_transition);
+                    if (print_stuff == 1) printf("sampled reward %f\n", sampled_reward);
+                    // Q(s,a)
+                    vector<double> all_Q_s_a = policy_net.forward(sampled_state); // the reason why i have this code block here; solution? pass class instance to a function?
+                    if (print_stuff == 1) printf("all Q(s,a)\n");
+                    if (print_stuff == 1) {
+                        for (auto a = 0; a < all_Q_s_a.size(); a++) cout << a << " " << all_Q_s_a[a] << endl;
+                    }
+                    double Q_s_a = all_Q_s_a[sampled_action];
+                    if (print_stuff == 1) printf("selected Q(s,a) = %f\n", Q_s_a);
+                    // V(s)
+                    vector<double> all_Qs_next = target_net.forward(sampled_next_state); // the reason why i don't implement this block inside Tensor class
+                    if (print_stuff == 1) printf("all Q(s+1,a)\n");
+                    if (print_stuff == 1) {
+                        for (auto a = 0; a < all_Qs_next.size(); a++) cout << a << " " << all_Qs_next[a] << endl;
+                    }
                     vector<double>::iterator result = max_element(all_Qs_next.begin(), all_Qs_next.end());
-                    double V_s_next = *result;
+                    double Qs_max_next = *result;
+                    if (print_stuff == 1) printf("max Q(s+1,a) = %f\n", Qs_max_next);
 
-                    double expected_state_action_values = V_s_next * gamma + reward;
+                    double expected_state_action_values = Qs_max_next * gamma + sampled_reward;
+                    //printf("expected_state_action_values = %f\n", expected_state_action_values);
                     double delta = Q_s_a - expected_state_action_values;
+                    if (print_stuff == 1) printf("delta = %f\n", delta);
+
                     // Huber loss
-                    if (abs(delta) <= 1) {
+                    /*if (abs(delta) <= 1) {
                         loss = 0.5 * delta * delta / (1.0 * batch_size);
                     }
                     else {
                         loss = (abs(delta) - 0.5) / (1.0 * batch_size);
-                    }
+                    }*/
+
+
+                    //printf("loss = %f\n", loss);
 
                     //gradients; potential problem -- hidden vectors; i think they should stay same, and i don't have to use forward() again
-                    policy_net.compute_gradients(w_gradients1, b_gradients1, w_gradients2, b_gradients2, batch_size, action, loss);
+                    // for now, let us pass TD difference, not loss
+                    policy_net.compute_gradients(w_gradients1, b_gradients1, w_gradients2, b_gradients2, batch_size, sampled_action, delta);
+                    if (print_stuff == 1) printf("gradients are computed!\n");
                 }
 
                 policy_net.optimizer_step(w_gradients1, b_gradients1, w_gradients2, b_gradients2); // update policy_net parameters
+                if (print_stuff == 1) printf("policy_net.optimizer_step -- done\n");
                 policy_net_params = policy_net.get_model_parameters(); // copy them
                 target_net.soft_update(policy_net_params, tau); // soft update of target network parameters
+                if (print_stuff == 1) printf("target_net.soft_update -- done\n");
             }
 
             // the cartpole failed, reward = -1
