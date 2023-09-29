@@ -224,7 +224,6 @@ void Tensor::copy_parameters(tuple<vector<vector<double>>, vector<double>, vecto
     _B2 = get<3>(net_params);
 }
 
-
 void Tensor::print_parameters() {
 
     printf("W1:\n");

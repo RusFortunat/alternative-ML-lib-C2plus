@@ -24,14 +24,14 @@ int main() {
     double L = 0.5; /* actually half the pole's length */
     // network parameters
     int input_size = 4;     // x, x_dot, theta, theta_dot
-    int hidden_size = 64;
+    int hidden_size = 32;
     int output_size = 2;    // two actions - push to the left or to the right
-    int batch_size = 128;   // number of experiences sampled from the replay buffer
+    int batch_size = 256;   // number of experiences sampled from the replay buffer
     double gamma = 0.99;    // to compute expected return
-    double lr = 0.001;      // learning rate
+    double lr = 0.01;      // learning rate
     double eps_start = 0.9; // for greedy algorithm; at the beginning do more exploration and choose random actions
     double eps_end = 0.01;  // closer to the end we choose more greedily, relying more on network predictions
-    double eps_decay = 1000.0;
+    double eps_decay = 2000.0;
     double tau = 0.005;     // for soft update of target net parameters 
     int goal = 1000;        // train the network until the pole can stay up for at least 10k updates
     int terminal_episode = 1000; // if the system doesn't learn to balance the pole in this N number of trials, terminate simulation
@@ -65,6 +65,7 @@ int main() {
     // main simulation loop
     int print_stuff = 0; // 0 do not print; 1 print; for unit tests
     vector<int> episode_durations;
+    vector<double> aver_ep_durations(terminal_episode / 10);
     int episode = 1;
     int last_step = 0;
     while (last_step < goal) {
@@ -146,7 +147,8 @@ int main() {
                     // V(s)
                     double Qs_max_next = 0.0;
                     if (sampled_reward >= 0) {
-                        vector<double> all_Qs_next = target_net.forward(sampled_next_state); // the reason why i don't implement this block inside Tensor class
+                        // i changed here target_net to policy_net just because i'm curious to see what happens
+                        vector<double> all_Qs_next = policy_net.forward(sampled_next_state); // the reason why i don't implement this block inside Tensor class
                         if (print_stuff == 1) printf("all Q(s+1,a)\n");
                         if (print_stuff == 1) {
                             for (auto a = 0; a < all_Qs_next.size(); a++) cout << a << " " << all_Qs_next[a] << endl;
@@ -157,8 +159,8 @@ int main() {
                     if (print_stuff == 1) printf("max Q(s+1,a) = %f\n", Qs_max_next);
 
                     double expected_state_action_values = Qs_max_next * gamma + sampled_reward;
-                    //printf("expected_state_action_values = %f\n", expected_state_action_values);
-                    double delta = Q_s_a - expected_state_action_values;
+                    if (print_stuff == 1) printf("expected_state_action_values = %f\n", expected_state_action_values);
+                    double delta = Q_s_a - expected_state_action_values; // negative delta -> weight should grow; positive -> weight should decrease
                     if (print_stuff == 1) printf("delta = %f\n", delta);
 
                     // Huber loss
@@ -173,14 +175,14 @@ int main() {
 
                     //gradients; potential problem -- hidden vectors; i think they should stay same, and i don't have to use forward() again
                     // for now, let us pass TD difference, not loss
-                    policy_net.compute_gradients(w_gradients1, b_gradients1, w_gradients2, b_gradients2, batch_size, sampled_action, loss);
+                    policy_net.compute_gradients(w_gradients1, b_gradients1, w_gradients2, b_gradients2, batch_size, sampled_action, delta);
                     if (print_stuff == 1) printf("gradients are computed!\n");
                 }
 
                 policy_net.optimizer_step(w_gradients1, b_gradients1, w_gradients2, b_gradients2); // update policy_net parameters
                 if (print_stuff == 1) printf("policy_net.optimizer_step -- done\n");
                 policy_net_params = policy_net.get_model_parameters(); // copy them
-                target_net.soft_update(policy_net_params, tau); // soft update of target network parameters
+                //target_net.soft_update(policy_net_params, tau); // soft update of target network parameters
                 if (print_stuff == 1) printf("target_net.soft_update -- done\n");
             }
 
@@ -206,10 +208,26 @@ int main() {
         printf("The training goal has been achieved after %d episodes\n", episode - 1);
     }
 	
+    // average episode durations
+    int sum = 0;
+    for (auto ep = 0; ep < terminal_episode; ep++) {
+        if (ep % 10 == 0) {
+            int index = ep / 10;
+            aver_ep_durations[index] = (1.0*sum)/10.0;
+            sum = 0;
+        }
+        sum += episode_durations[ep];
+    }
+
 	string filename = "training_output.txt";
     ofstream output(filename.c_str(), std::ofstream::out);
     for (auto ep = 0; ep < episode - 1; ep++) {
-        output << ep + 1 << "\t" << episode_durations[ep] << endl;
+        if (ep < (episode - 1) / 10) {
+            output << ep + 1 << "\t" << episode_durations[ep] << "\t" << (ep+1)*10 << "\t" << aver_ep_durations[ep] << endl;
+        }
+        else {
+            output << ep + 1 << "\t" << episode_durations[ep] << "\t" << 0 << endl;
+        }
     }
     output.close();
 
