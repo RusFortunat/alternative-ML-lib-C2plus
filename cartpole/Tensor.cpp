@@ -17,7 +17,7 @@ using namespace std;
 
 // A constructor, that generates the neural network structure; 
 // To create a network with 1 hidden layer, i need to initialize 2 adjacency matrices and 2 bias vectors
-Tensor::Tensor(int input_size, int hidden_size, int output_size, double learning_rate){
+Tensor::Tensor(int input_size, int hidden_size, int output_size, double learning_rate, int random_seed){
 
     _input_size = input_size;
     _hidden_size = hidden_size;
@@ -37,8 +37,7 @@ Tensor::Tensor(int input_size, int hidden_size, int output_size, double learning
        
     //random_device rd{}; //doesn't work with my MinGW compiler, gives the same number... should work with other compilers
     //mt19937 RNG2{rd()};
-    srand(std::time(0));
-    const int random_seed = rand();
+    
     mt19937 RNG{ random_seed };
 
     // I will go with the uniform distribution, that ranges from -(1/sqrt(input_size)):(1/sqrt(input_size))
@@ -94,22 +93,28 @@ int Tensor::select_action(vector<double>& state, double epsilon, int output_size
 
     //random_device rd{}; //doesn't work with my MinGW compiler, gives the same number... should work with other compilers
     //mt19937 RNG2{rd()};
-    srand(std::time(0));
-    const int random_seed = rand();
+    int random_seed = rand();
     mt19937 RNG{ random_seed };
 
-    uniform_real_distribution<double> dice{ 0, 1 };
-    uniform_int_distribution<int> action_dice{ 0, output_size - 1 };
+    uniform_real_distribution<double> dice( 0.0, 1.0 );
+    uniform_int_distribution<int> action_dice( 0, output_size - 1 );
     double dice_throw = dice(RNG);
+    //printf("dice_throw = %f\n", dice_throw);
     int action = -1;
 
     if (dice_throw > epsilon) { // greedy action
         vector<double> predicted_actions = forward(state);
         vector<double>::iterator result = max_element(predicted_actions.begin(), predicted_actions.end());
         action = *result;
+        /*printf("predicted Q values:\n");
+        for (auto i = 0; i < predicted_actions.size(); i++) {
+            printf("action = %d, Q(s,a) = %f\n", i, predicted_actions[i]);
+        }
+        printf("greedy action %d\n", action);*/
     }
     else {
         action = action_dice(RNG); // random action
+        //printf("random action %d\n", action);
     }
 
     return action;
@@ -172,21 +177,8 @@ void Tensor::optimizer_step(vector<vector<double>>& w_gradients1, vector<double>
     }
 }
 
-
-tuple<vector<vector<double>>, vector<double>, vector<vector<double>>, vector<double>> Tensor::get_model_parameters(){
-
-    return make_tuple(_W1, _B1, _W2, _B2);
-}
-
-void Tensor::copy_parameters(tuple<vector<vector<double>>, vector<double>, vector<vector<double>>, vector<double>> net_params) {
-    _W1 = get<0>(net_params);
-    _B1 = get<1>(net_params);
-    _W2 = get<2>(net_params);
-    _B2 = get<3>(net_params);
-}
-
 void Tensor::soft_update(tuple<vector<vector<double>>, vector<double>,
-    vector<vector<double>>, vector<double>> net_params, double tau) {
+    vector<vector<double>>, vector<double>>& net_params, double tau) {
 
     vector<vector<double>> copy_policy_net_W1 = get<0>(net_params);
     vector<double> copy_policy_net_B1 = get<1>(net_params);
@@ -207,4 +199,48 @@ void Tensor::soft_update(tuple<vector<vector<double>>, vector<double>,
         }
         _B2[i] = copy_policy_net_B2[i] * tau + _B2[i] * (1 - tau);
     }
+}
+
+tuple<vector<vector<double>>, vector<double>, vector<vector<double>>, vector<double>> Tensor::get_model_parameters() {
+
+    return make_tuple(_W1, _B1, _W2, _B2);
+}
+
+void Tensor::copy_parameters(tuple<vector<vector<double>>, vector<double>, vector<vector<double>>, vector<double>> net_params) {
+    _W1 = get<0>(net_params);
+    _B1 = get<1>(net_params);
+    _W2 = get<2>(net_params);
+    _B2 = get<3>(net_params);
+}
+
+
+void Tensor::print_parameters() {
+
+    printf("W1:\n");
+    for (auto i = 0; i < _hidden_size; i++) {
+        for (auto j = 0; j < _input_size; j++) {
+            cout << _W1[i][j] << " ";
+        }
+        cout << endl;
+    }
+
+    printf("B1:\n");
+    for (auto i = 0; i < _input_size; i++) {
+        cout << _B1[i] << " ";
+    }
+    cout << endl;
+
+    printf("W2:\n");
+    for (auto i = 0; i < _output_size; i++) {
+        for (auto j = 0; j < _hidden_size; j++) {
+            cout << _W2[i][j] << " ";
+        }
+        cout << endl;
+    }
+
+    printf("B2:\n");
+    for (auto i = 0; i < _output_size; i++) {
+        cout << _B2[i] << " ";
+    }
+    cout << endl;
 }

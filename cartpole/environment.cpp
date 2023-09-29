@@ -27,11 +27,11 @@ Environment::~Environment(){
 }
 
 // the function receives the action to push cartpole to the left or to the right
-tuple<vector<double>, int, vector<double>, double> Environment::update(int action){
+tuple<vector<double>, int, vector<double>, double> Environment::update(int& action){
 
     // Will copy this implementation from R. Sutton's book: http://incompleteideas.net/sutton/book/code/pole.c 
-
-    double Force = action == 0 ? -10.0 : 10.0; // push the cart to the left for action = 0; otherwise to the right
+    int passed_action = action;
+    double Force = passed_action == 0 ? -10.0 : 10.0; // push the cart to the left for action = 0; otherwise to the right
     double TAU = 0.02; // time increment
     double g = 9.8; // gravity
     double theta_fail = 0.2; // if theta exceeds this number, episode stops; about 12 degrees
@@ -53,17 +53,16 @@ tuple<vector<double>, int, vector<double>, double> Environment::update(int actio
 
     vector<double> next_state = { _x, _x_dot, _theta, _theta_dot };
 
-    double reward = 0.0;
+    double reward = 1.0;
     // terminate episode if cart goes to far or tilts too much
     if (abs(_theta) > theta_fail || abs(_x) > x_fail) {
         reward = -1.0;
         next_state.erase(next_state.begin(), next_state.begin() + next_state.size()); // empty vector, equivalent to python's next_state=None
-    }
-    else {
-        reward = 1.0;
+        //printf("Failure! the max angle or distance values are exceeded!\n");
     }
 
-    return make_tuple(current_state, action, next_state, reward);
+    //printf("reward before getting into tuple = %f\n", reward);
+    return make_tuple(current_state, passed_action, next_state, reward);
 }
 
 vector<double> Environment::get_state() {

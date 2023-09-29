@@ -16,7 +16,7 @@ class Environment{
         Environment(double M, double m, double L); // constructor with random parameters
         ~Environment();
 
-        tuple<vector<double>, int, vector<double>, double> update(int action); // forwardprop with ReLU activation
+        tuple<vector<double>, int, vector<double>, double> update(int& action); // forwardprop with ReLU activation
 
         vector<double> get_state();
 

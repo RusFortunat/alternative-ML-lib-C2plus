@@ -8,7 +8,7 @@ using namespace std;
 class Tensor{
     public:
         // for now all tensors will have just a single hidden layer and random parameters
-        Tensor(int input_size, int hidden_size, int output_size, double learning_rate); // constructor
+        Tensor(int input_size, int hidden_size, int output_size, double learning_rate, int random_seed); // constructor
         ~Tensor(); // destructor
 
         vector<double> forward(vector<double> &input_vector); // forwardprop with ReLU activation
@@ -20,10 +20,12 @@ class Tensor{
         void optimizer_step(vector<vector<double>>& w_gradients1, vector<double>& b_gradients1,
             vector<vector<double>>& w_gradients2, vector<double>& b_gradients2);
 
+        void soft_update(tuple<vector<vector<double>>, vector<double>, vector<vector<double>>, vector<double>>& net_params,
+            double tau);
+
         tuple<vector<vector<double>>, vector<double>, vector<vector<double>>, vector<double>> get_model_parameters();
         void copy_parameters(tuple<vector<vector<double>>, vector<double>, vector<vector<double>>, vector<double>> net_params);
-        void soft_update(tuple<vector<vector<double>>, vector<double>, vector<vector<double>>, vector<double>> net_params,
-            double tau);
+        void print_parameters();
 
     private: 
         int _input_size;

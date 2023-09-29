@@ -32,14 +32,24 @@ int main(){
     double eps_end = 0.01;  // closer to the end we choose more greedily, relying more on network predictions
     double eps_decay = 1000.0;
     double tau = 0.005;     // for soft update of target net parameters 
-    int goal = 2000;        // train the network until the pole can stay up for at least 10k updates
+    int goal = 1000;        // train the network until the pole can stay up for at least 10k updates
     int terminal_episode = 1000; // if the system doesn't learn to balance the pole in this N number of trials, terminate simulation
 
     // we need two networks for DQN algorithm: policy_net used for choosing actions from observations, and target_net computes value functions V(s, t+1) 
-    Tensor target_net(input_size, hidden_size, output_size, lr); // updated softly 
-    Tensor policy_net(input_size, hidden_size, output_size, lr); // updated every step
+    // can't make random_device to work with MinGW compiler
+    srand(std::time(0));
+    int random_seed = rand();
+    Tensor target_net(input_size, hidden_size, output_size, lr, random_seed); // updated softly 
+    random_seed = rand();
+    Tensor policy_net(input_size, hidden_size, output_size, lr, random_seed); // updated every step
     tuple<vector<vector<double>>, vector<double>, vector<vector<double>>, vector<double>> policy_net_params = policy_net.get_model_parameters();
+    //printf("policy network parameters:\n");
+    //policy_net.print_parameters();
+    //printf("target network parameters before copying policy network params:\n");
+    //target_net.print_parameters();
     target_net.copy_parameters(policy_net_params); // copy parameters 
+    //printf("target network parameters after copying policy network params:\n");
+    //target_net.print_parameters();
 
     // memory buffer
     vector <tuple <vector<double>, int, vector<double>, double>> replay_buffer; // collect experiences here
@@ -48,7 +58,7 @@ int main(){
     //random_device rd{}; //doesn't work with my MinGW compiler, gives the same number... should work with other compilers
     //mt19937 RNG2{rd()};
     srand(std::time(0));
-    const int random_seed = rand();
+    random_seed = rand();
     mt19937 RNG{ random_seed };
 
     // main simulation loop
@@ -62,14 +72,24 @@ int main(){
         // initiate the cartpole model 
         Environment my_little_cartpole(M, m, L);
 
+
         // start balancing the pole
         for (auto steps_done = 0; steps_done < goal; steps_done++) {
+            //printf("time step = %d\n", steps_done);
             // select action
             current_epsilon = eps_end + (eps_start - eps_end) * exp(-(1.0 * steps_done) / eps_decay);
+            printf("current epsilon %f\n", current_epsilon);
             vector<double> state = my_little_cartpole.get_state(); // x, x_dot, theta, theta_dot; all zero at the beginning of the simulation
+            printf("current state: x = %f, x_dot = %f, theta = %f, theta_dot = %f\n", state[0], state[1], state[2], state[3]);
             int action = policy_net.select_action(state, current_epsilon, output_size); // 0 or 1 (left or right push)
+            printf("selected action: %d\n", action);
             // get tuple ( state, action, next_state, reward )
-            tuple<vector<double>, int, vector<double>, double> transition = my_little_cartpole.update(action); 
+            tuple<vector<double>, int, vector<double>, double> transition = my_little_cartpole.update(action);
+            vector<double> new_state = my_little_cartpole.get_state(); // x, x_dot, theta, theta_dot; all zero at the beginning of the simulation
+            printf("new state: x = %f, x_dot = %f, theta = %f, theta_dot = %f\n", new_state[0], new_state[1], new_state[2], new_state[3]);
+            double print_reward = get<3>(transition);
+            printf("reward = %f\n\n", print_reward);
+            
             replay_buffer.push_back(transition); // save tuple to the memory buffer
 
             // we need to gather enough experiences to fill our table before start updating the network paramters
@@ -129,12 +149,18 @@ int main(){
                 episode++;
                 break;
             }
-            // terminate simulation if it goes for too long
-            if (episode > terminal_episode) break;
+            // 
+        }
+
+        if (episode > terminal_episode) {
+            printf("We haven't achieved our goal after %d episodes. Terminating training...", episode - 1);
+            break;
         }
     }
 
-    printf("The training is finished after %d episodes\n", episode);
+    if (episode < terminal_episode) {
+        printf("The training goal has been achieved after %d episodes\n", episode - 1);
+    }
 
     return 0;
 }
