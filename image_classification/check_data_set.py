@@ -3,6 +3,7 @@
 # The list of datasets available for the training can be found here: https://pytorch.org/vision/0.8/datasets.html#mnist
 # Take care of whether the images you load are gray-scale or colored, that changes the number of input channels
 
+import sys
 import time
 import torch
 import torchvision
@@ -13,18 +14,15 @@ import torch.optim as optim
 
 
 class FCNet(nn.Module):
-    def __init__(self, image_shape, hidden_layer_FC1, hidden_layer_FC2):
+    def __init__(self, image_shape, hidden_layer_FC1):
         super().__init__()
         self.fc1 = nn.Linear(image_shape, hidden_layer_FC1) # DIFFERENT FOR DIFFERENT DATA SETS; I'm lazy & stupid to automize it on the go
-        self.fc2 = nn.Linear(hidden_layer_FC1, hidden_layer_FC2)
-        self.fc3 = nn.Linear(hidden_layer_FC2, 10)
+        self.fc2 = nn.Linear(hidden_layer_FC1, 10)
 
     def forward(self, x):
         x = torch.flatten(x, 1) # flatten all dimensions except batch
         x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
-        x = self.fc3(x)
-        return x
+        return self.fc2(x)
 
     
 
@@ -61,9 +59,8 @@ def main():
 
     # initialize instances of FC and ConvNet classes
     in_channels = 1 # important for CNN networks: 1 for grayscale, 3 for colored
-    hidden_layer_FC1 = 200 # 120 tutorial value
-    hidden_layer_FC2 = 100 # 84 tutorial value
-    fcNet = FCNet(image_dims, hidden_layer_FC1, hidden_layer_FC2)
+    hidden_layer_FC1 = 256 # 120 tutorial value
+    fcNet = FCNet(image_dims, hidden_layer_FC1)
     num_of_FC_params = count_parameters(fcNet)
 
     criterion = nn.CrossEntropyLoss()
@@ -71,7 +68,7 @@ def main():
     # train FC model
     start_time = time.time()
     optimizerFC = optim.SGD(fcNet.parameters(), lr=0.001, momentum=0.9)
-    for epoch in range(5):  # loop over the dataset multiple times
+    for epoch in range(30):  # loop over the dataset multiple times
         running_loss = 0.0
         for i, data in enumerate(trainloader, 0):
             # get the inputs; data is a list of [inputs, labels]
@@ -112,7 +109,28 @@ def main():
 
     print(f'FC training time: {FC_training_time} sec')
     print(f'Number of FC model parameters: {num_of_FC_params}')
-    print(f'Accuracy of the FC network on the 10000 test images: {100 * correctFC // total} %')
+    print(f'Accuracy of the FC network on the 10000 test images: {100.0 * correctFC / total:.2f} %')
+    
+    # save network parameters
+    file = 'D:/Work/alternative-ML-lib-C2plus/image_classification/saved_params.txt'
+    torch.set_printoptions(threshold=sys.maxsize)
+    with open(file, 'w') as f:
+        # Print model's state_dict
+        f.write("Model's state_dict:")
+        for param_tensor in fcNet.state_dict():
+            output_string = param_tensor + "\t" + str(fcNet.state_dict()[param_tensor].size()) + "\n"
+            f.write(output_string)
+
+        # Print optimizer's state_dict
+        f.write("Optimizer's state_dict:\n")
+        for var_name in optimizerFC.state_dict():
+            output_string = str(optimizerFC.state_dict()[var_name]).replace('\n', '')
+            output_string = output_string.replace('\t', '')
+            output_string = output_string.replace(' ', '')
+            f.write(output_string)
+            f.write('\n')
+            
+        f.close()
 
 
 if __name__ == '__main__':
