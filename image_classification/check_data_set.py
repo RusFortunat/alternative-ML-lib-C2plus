@@ -68,7 +68,7 @@ def main():
     # train FC model
     start_time = time.time()
     optimizerFC = optim.SGD(fcNet.parameters(), lr=0.001, momentum=0.9)
-    for epoch in range(30):  # loop over the dataset multiple times
+    for epoch in range(100):  # loop over the dataset multiple times
         running_loss = 0.0
         for i, data in enumerate(trainloader, 0):
             # get the inputs; data is a list of [inputs, labels]
@@ -86,7 +86,7 @@ def main():
             # print statistics
             running_loss += loss.item()
             if i % 2000 == 1999:    # print every 2000 mini-batches
-                print(f'[{epoch + 1}, {i + 1:5d}] FC loss: {running_loss / 2000:.3f}')
+                print(f'[{epoch + 1}, {i + 1:5d}] FC loss: {running_loss / 2000:.4f}')
                 running_loss = 0.0
 
     FC_training_time = time.time() - start_time
